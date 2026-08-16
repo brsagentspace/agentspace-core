@@ -290,15 +290,54 @@ i18n:
     - "Locale files are sorted alphabetically by key to minimize merge conflicts"
 
 # ─────────────────────────────────────────────
-# EVRENSEL TASARIM SÜRECİ KURALLARI
-# (1-1 kopya değil — süreç standartları)
+# EVRENSEL TASARIM SÜRECİ VE SAAS STANDARTLARI
+# (Anti-Vibe-Code → Profesyonel SaaS Dönüşümü)
 # ─────────────────────────────────────────────
 design_process:
   critical_rule: |
-    Bu kurallar SÜREÇ standartlarıdır.
-    Referans projenin rengi, fontu veya UI'si kopyalanmaz.
-    Her proje görsel olarak tamamen özgün olacak.
-    Kalite ve tutarlılık SÜREÇTEN gelir, kopyadan değil.
+    Bu kurallar SÜREÇ ve ÜRÜN KALİTESİ standartlarıdır.
+    AI tarafından üretilen amatör "vibe code" kalıpları yasaktır.
+    Referans projenin rengi veya UI'si kopyalanmaz; ürün profesyonel,
+    kurumsal ve sürdürülebilir bir SaaS standartında inşa edilir.
+
+  # ── 5 ANA SAAS DÖNÜŞÜM STRATEJİSİ (ANTI-VIBE-CODE) ──
+  saas_transformation_principles:
+    1_visual_language_and_icons:
+      error_to_avoid: "Rastgele seçilmiş emojiler ve uyumsuz ikonlar uygulamayı 'oyuncak' gibi gösterir."
+      standard: |
+        - Phosphor, Lucide veya Heroicons gibi modern, tutarlı ve profesyonel arayüz simge kütüphaneleri zorunludur.
+        - Tüm uygulama genelinde simgelerin çizgi kalınlığı (stroke-width) ve tarzı (line/solid) %100 homojen olmalıdır.
+        - UI içinde emoji kullanımı kesinlikle yasaktır (istisna: chat mesajı içerikleri).
+
+    2_color_theory_and_data_viz:
+      error_to_avoid: "Aşırı parlak, neon ve birbiriyle uyumsuz AI renkleri profesyonellikten uzaktır."
+      standard: |
+        - Mat, dengeli ve marka kimliğiyle uyumlu HSL paletleri kullanılır.
+        - KPI (Temel Performans Göstergesi) kartları asla sadece çıplak sayı olarak bırakılmaz.
+        - Her KPI kartının altına mutlaka mikro grafikler (sparkline trend çizgisi veya mini sütun grafik) eklenir.
+        - Bu mikro grafikler verinin sadece anlık bir sayı değil, bir trend/akış olduğunu gösterir.
+
+    3_layout_and_information_architecture:
+      error_to_avoid: "Aynı metrik ve bilgileri (ör. toplam tıklama) her ekranda gereksiz yere tekrar etmek."
+      standard: |
+        - Kenar Çubuğu (Sidebar): Yalnızca kullanıcı için kritik ana rotaları barındırır.
+        - İkincil bağlantılar (Ayarlar, Faturalandırma, Profil) tıklanabilir popover veya açılır menülere taşınır.
+        - Profil Yönetimi: Gradientli daireler yerine kurumsal, temiz ve minimal bir hesap kartı tasarımı kullanılır.
+        - Bilgi hiyerarşisi temiz ve sade tutulur, veri tekrarından kaçınılır.
+
+    4_functional_ui_modal_and_forms:
+      error_to_avoid: "Formların aşırı boş ya da tüm karmaşık ayarları ilk anda göstererek kullanıcıyı boğması."
+      standard: |
+        - Progressive Disclosure (Kademeli Gösterim): 'Gelişmiş Seçenekler' varsayılan olarak gizlenir.
+        - Temiz, geniş ve adım adım yol gösteren form modalları kullanılır.
+        - Ek parametreler Accordion veya Collapse bileşenleri içine yerleştirilir.
+
+    5_ux_analytics_and_landing_presentation:
+      error_to_avoid: "Karmaşık fiyatlandırma tabloları ve düz metin yığını olan vitrin sayfaları."
+      standard: |
+        - Faturalandırma (Billing): Planlar 3-4 seçenekle sınırlandırılır; en popüler/değerli plan vurgulanır. Bir sonraki plana geçişin kazanımları net belirtilir.
+        - Analitik: Sayıların yanında donut grafikler, haritalar ve filtreler ile veri karşılaştırma imkanı sunulur.
+        - Landing (Karşılama) Sayfası: Karmaşık metinler yerine ürün arayüzünden alınmış şık, gölgelendirilmiş, 3D açılı (skew/tilt) yüksek kaliteli ekran görüntüleri/mockup'lar ile ürünün nasıl çalıştığı anında hissettirilir.
 
   principles:
     - "Tasarım kararları önceden (wireframe/mockup) onaylanır, kod sonra yazılır"
