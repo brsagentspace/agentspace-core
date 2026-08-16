@@ -46,11 +46,18 @@ body, html, #root {
 
 .workspace {
   display: grid;
-  grid-template-columns: 320px 1fr 340px; /* Left (Office), Center (Terminal), Right (Tasks) */
+  grid-template-rows: 40% 1fr; /* Top (Office), Bottom (Terminal+Rules) */
   gap: 12px;
   padding: 12px;
   height: 100%;
   overflow: hidden;
+}
+
+.workspace-bottom {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+  min-height: 0;
 }
 
 /* === GENERIC PANELS === */

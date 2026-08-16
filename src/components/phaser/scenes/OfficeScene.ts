@@ -1,9 +1,12 @@
 /**
  * @file OfficeScene.ts
- * @description Phaser 3 scene for the 2D office simulation.
+ * @description Phaser 3 scene for the 2D office simulation (5-Room SaaS Dashboard Layout).
  *
- * Implements a detailed RPG tilemap level design with 4 separate rooms,
- * proper walls, decorations (props), detailed workstations, and agents.
+ * Implements a strict 5-room grid layout based on the user's ASCI architecture.
+ * Top row: 3 rooms (Lit. Lab, Research HQ, Data Lab)
+ * Bottom row: 2 rooms (Experiment Lab, Writing Lab)
+ * 
+ * Standardizes scale to 1 Tile = 32px. Uses ultra-clean UI overlays for labels.
  *
  * @module components/phaser/scenes
  */
@@ -11,40 +14,43 @@
 import Phaser from 'phaser';
 import type { Agent, AgentStatus } from '../../../types';
 
+interface RoomBounds {
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  tint: number;
+}
+
 interface DeskSlot {
   id: string;
   x: number;
   y: number;
   label: string;
   assignedAgentId: string | null;
+  bounds: RoomBounds;
 }
 
 interface AgentVisual {
   sprite: Phaser.GameObjects.Sprite;
   shadow: Phaser.GameObjects.Ellipse;
   label: Phaser.GameObjects.Text;
-  statusBubble: Phaser.GameObjects.Container;
-  bubbleText: Phaser.GameObjects.Text;
+  statusDot: Phaser.GameObjects.Arc;
   glow: Phaser.GameObjects.Arc;
   targetX: number;
   targetY: number;
+  isWandering: boolean;
+  wanderingEvent?: Phaser.Time.TimerEvent;
+  homeDesk: DeskSlot;
 }
 
-const TILE_SIZE = 32; // Scaled from 16x16 to 32x32
+const TILE_SIZE = 32;
 
 export class OfficeScene extends Phaser.Scene {
   private agentVisuals: Map<string, AgentVisual> = new Map();
-
-  // Positions mapped to the center of 4 rooms
-  private deskSlots: DeskSlot[] = [
-    { id: 'desk_1', x: 150, y: 150, label: 'Architect (Tier 1)', assignedAgentId: null },
-    { id: 'desk_2', x: 450, y: 150, label: 'Frontend-Bot', assignedAgentId: null },
-    { id: 'desk_3', x: 150, y: 350, label: 'Backend-Bot', assignedAgentId: null },
-    { id: 'desk_4', x: 450, y: 350, label: 'QA-Service', assignedAgentId: null },
-    { id: 'desk_5', x: 300, y: 250, label: 'Database-Agent', assignedAgentId: null },
-  ];
-
-  private officeContainer!: Phaser.GameObjects.Container;
+  private deskSlots: DeskSlot[] = [];
+  private rooms: RoomBounds[] = [];
 
   constructor() {
     super({ key: 'OfficeScene' });
@@ -63,216 +69,294 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#000000');
-    this.officeContainer = this.add.container(0, 0);
+    this.cameras.main.setBackgroundColor('#0d0d12');
 
-    this.renderLevel();
+    this.calculateArchitecture();
+    this.renderArchitecture();
     this.renderDesks();
 
-    // Minor breathing effect for the entire level
-    this.tweens.add({
-      targets: this.officeContainer,
-      alpha: { from: 0.96, to: 1 },
-      duration: 4000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    this.scale.on('resize', this.handleResize, this);
 
     window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
   }
 
-  /**
-   * Generates the 2D Tilemap (Rooms, Walls, Floors)
-   */
-  private renderLevel(): void {
-    const width = this.scale.width;
-    const height = this.scale.height;
-    const mapCols = Math.ceil(width / TILE_SIZE);
-    const mapRows = Math.ceil(height / TILE_SIZE);
-
-    for (let c = 0; c < mapCols; c++) {
-      for (let r = 0; r < mapRows; r++) {
-        let isWall = false;
-
-        // Check walls (borders only for a clean open-space office)
-        if (c === 0 || c === mapCols - 1 || r === 0 || r === mapRows - 1) {
-          isWall = true;
-        }
-
-        // 14 = clean floor tile, 0 = wall
-        const tileId = isWall ? 0 : 14; 
-
-        const tile = this.add.image(c * TILE_SIZE, r * TILE_SIZE, 'urban_tiles', tileId).setOrigin(0, 0);
-        tile.setDisplaySize(TILE_SIZE, TILE_SIZE);
-        
-        // Depth sorting: floors at bottom, walls slightly higher
-        tile.setDepth(isWall ? 1 : 0);
-
-        // Cleaned up random props logic to make it look professional
-        if (isWall && c > 0 && c < mapCols - 1 && r > 0 && r < mapRows - 1) {
-          if (Math.random() > 0.9) {
-            const propId = 200; // Single clean window tile
-            const prop = this.add.image(c * TILE_SIZE, r * TILE_SIZE, 'urban_tiles', propId).setOrigin(0, 0);
-            prop.setDisplaySize(TILE_SIZE, TILE_SIZE);
-            prop.setDepth(2);
-          }
-        }
-      }
-    }
+  private handleResize(gameSize: Phaser.Structs.Size) {
+    this.cameras.main.setSize(gameSize.width, gameSize.height);
+    this.scene.restart();
   }
 
   /**
-   * Renders the workstations (Desks, Monitors) inside the rooms.
+   * Calculates the exact pixel coordinates for the 5-room grid layout.
+   */
+  private calculateArchitecture() {
+    const width = this.scale.width;
+    const height = this.scale.height;
+
+    // A small padding to simulate the outer SaaS container border
+    const pad = 16;
+    const innerW = width - (pad * 2);
+    const innerH = height - (pad * 2);
+
+    const halfH = innerH / 2;
+    
+    // Top Row (3 Rooms)
+    const topW = innerW / 3;
+    const litLab = { name: 'Lit. Lab', x: pad, y: pad, w: topW, h: halfH, tint: 0x23211c };
+    const resHQ = { name: 'Research HQ', x: pad + topW, y: pad, w: topW, h: halfH, tint: 0x16161d };
+    const dataLab = { name: 'Data Lab', x: pad + (topW * 2), y: pad, w: topW, h: halfH, tint: 0x141a22 };
+
+    // Bottom Row (2 Rooms)
+    const botW = innerW / 2;
+    const expLab = { name: 'Experiment Lab', x: pad, y: pad + halfH, w: botW, h: halfH, tint: 0x14201c };
+    const wrtLab = { name: 'Writing Lab', x: pad + botW, y: pad + halfH, w: botW, h: halfH, tint: 0x1b161c };
+
+    this.rooms = [litLab, resHQ, dataLab, expLab, wrtLab];
+
+    // Assign Desks to the exact center of each room
+    this.deskSlots = [
+      { id: 'desk_lit', x: litLab.x + (litLab.w / 2), y: litLab.y + (litLab.h / 2), label: 'Literature', assignedAgentId: null, bounds: litLab },
+      { id: 'desk_res', x: resHQ.x + (resHQ.w / 2), y: resHQ.y + (resHQ.h / 2), label: 'Orchestrator', assignedAgentId: null, bounds: resHQ },
+      { id: 'desk_data', x: dataLab.x + (dataLab.w / 2), y: dataLab.y + (dataLab.h / 2), label: 'Data', assignedAgentId: null, bounds: dataLab },
+      { id: 'desk_exp', x: expLab.x + (expLab.w / 2), y: expLab.y + (expLab.h / 2), label: 'Experiment', assignedAgentId: null, bounds: expLab },
+      { id: 'desk_wrt', x: wrtLab.x + (wrtLab.w / 2), y: wrtLab.y + (wrtLab.h / 2), label: 'Writing', assignedAgentId: null, bounds: wrtLab },
+    ];
+  }
+
+  /**
+   * Renders the walls, floors, and filigree text based on architecture.
+   */
+  private renderArchitecture(): void {
+    // 1. Draw smooth floor grid to cover everything behind the lines
+    const mapCols = Math.ceil(this.scale.width / TILE_SIZE);
+    const mapRows = Math.ceil(this.scale.height / TILE_SIZE);
+    
+    for (let c = 0; c < mapCols; c++) {
+      for (let r = 0; r < mapRows; r++) {
+        const tile = this.add.image(c * TILE_SIZE, r * TILE_SIZE, 'urban_tiles', 14).setOrigin(0, 0);
+        tile.setDisplaySize(TILE_SIZE, TILE_SIZE);
+        
+        // Find which room this tile belongs to, to tint it
+        const centerX = (c * TILE_SIZE) + (TILE_SIZE / 2);
+        const centerY = (r * TILE_SIZE) + (TILE_SIZE / 2);
+        
+        const room = this.rooms.find(rm => 
+          centerX >= rm.x && centerX <= rm.x + rm.w &&
+          centerY >= rm.y && centerY <= rm.y + rm.h
+        );
+        
+        tile.setTint(room ? room.tint : 0x0d0d12);
+        tile.setDepth(0);
+      }
+    }
+
+    // 2. Draw crisp SaaS vector lines for walls
+    const g = this.add.graphics();
+    g.lineStyle(1, 0x2c2c3b, 1);
+    
+    this.rooms.forEach(room => {
+      // Room border
+      g.strokeRect(room.x, room.y, room.w, room.h);
+      
+      // Filigree watermark text in the center of each room
+      const text = this.add.text(room.x + (room.w / 2), room.y + (room.h / 2) - 32, room.name.toUpperCase(), {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '16px',
+        color: '#ffffff',
+        fontWeight: 'bold',
+        letterSpacing: 2
+      }).setOrigin(0.5);
+      
+      text.setAlpha(0.04); // Extremely subtle watermark
+      text.setDepth(1);
+    });
+
+    g.setDepth(2);
+  }
+
+  /**
+   * Renders minimal professional workstations.
    */
   private renderDesks(): void {
     this.deskSlots.forEach((desk) => {
-      // Desk Base
+      // Desk (Standardized 1x2 scale)
       const deskTile = this.add.image(desk.x, desk.y, 'urban_tiles', 133);
-      deskTile.setScale(2.5); 
-      deskTile.setDepth(10); // Above floor
+      deskTile.setDisplaySize(TILE_SIZE, TILE_SIZE * 1.5); 
+      deskTile.setDepth(10); 
 
-      // Monitor
-      const monitorTile = this.add.image(desk.x, desk.y - 12, 'urban_tiles', 160);
-      monitorTile.setScale(2.2);
+      // Monitor (Standardized ~0.75x0.75)
+      const monitorTile = this.add.image(desk.x, desk.y - 8, 'urban_tiles', 160);
+      monitorTile.setDisplaySize(20, 20);
       monitorTile.setDepth(11);
 
-      // Keyboard (Guessing ID 162 or similar)
+      // Keyboard
       const kbTile = this.add.image(desk.x, desk.y + 6, 'urban_tiles', 162);
-      kbTile.setScale(1.5);
+      kbTile.setDisplaySize(16, 16);
       kbTile.setDepth(11);
-      
-      // Random plant (ID 210) next to desk
-      if (Math.random() > 0.5) {
-        const plant = this.add.image(desk.x + 32, desk.y, 'urban_tiles', 210);
-        plant.setScale(2);
-        plant.setDepth(11);
-      }
     });
   }
 
   public syncAgents(agents: Agent[]): void {
     if (!this.sys || !this.add) return;
-
     const currentIds = new Set(agents.map((a) => a.id));
 
-    // Remove deleted agents
     for (const [id, visual] of this.agentVisuals.entries()) {
       if (!currentIds.has(id)) {
+        if (visual.wanderingEvent) visual.wanderingEvent.destroy();
         visual.sprite.destroy();
         visual.shadow.destroy();
         visual.label.destroy();
-        visual.statusBubble.destroy();
+        visual.statusDot.destroy();
         visual.glow.destroy();
         this.agentVisuals.delete(id);
       }
     }
 
-    // Add or update agents
     agents.forEach((agent, index) => {
+      // Assign based on array index ensuring each room gets an agent if possible
       const assignedDesk = this.deskSlots[index % this.deskSlots.length];
-      const targetX = assignedDesk.x;
-      const targetY = assignedDesk.y - 16; // Agent sits BEHIND the desk
+      const deskTargetX = assignedDesk.x;
+      const deskTargetY = assignedDesk.y - 12; 
 
       if (!this.agentVisuals.has(agent.id)) {
-        this.createAgentVisual(agent, targetX, targetY);
+        this.createAgentVisual(agent, deskTargetX, deskTargetY, assignedDesk);
       } else {
-        this.updateAgentVisual(agent, targetX, targetY);
+        this.updateAgentVisual(agent, deskTargetX, deskTargetY);
       }
     });
   }
 
-  private createAgentVisual(agent: Agent, targetX: number, targetY: number): void {
+  private createAgentVisual(agent: Agent, deskX: number, deskY: number, homeDesk: DeskSlot): void {
     const textureKey = `robot_${agent.color || 'blue'}`;
 
-    // Soft drop shadow
-    const shadow = this.add.ellipse(targetX, targetY + 24, 28, 12, 0x000000, 0.6);
+    const shadow = this.add.ellipse(deskX, deskY + 16, 18, 6, 0x000000, 0.4);
     shadow.setDepth(12);
 
-    const glow = this.add.circle(targetX, targetY, 24, this.getColorHex(agent.color), 0.15);
+    const glow = this.add.circle(deskX, deskY, 18, this.getColorHex(agent.color), 0.1);
     glow.setDepth(12);
 
-    // Robot Sprite
-    const sprite = this.add.sprite(targetX, targetY, textureKey);
-    sprite.setDisplaySize(38, 40); // Slightly smaller to fit the desk proportion
-    sprite.setInteractive({ useHandCursor: true });
+    const sprite = this.add.sprite(deskX, deskY, textureKey);
+    sprite.setDisplaySize(22, 28); 
     sprite.setDepth(13);
+    sprite.setInteractive({ useHandCursor: true });
 
-    // Agent Name Badge (Muratify Style: Neon green on black)
-    const label = this.add.text(targetX, targetY + 32, agent.name.toUpperCase(), {
-      fontFamily: 'JetBrains Mono, monospace',
+    // Minimal SaaS Label (Muted, ultra-small, natural placement)
+    const label = this.add.text(deskX, deskY + 20, homeDesk.label, {
+      fontFamily: 'Inter, sans-serif',
       fontSize: '9px',
-      color: '#10b981', // Neon Green
-      backgroundColor: '#000000',
-      padding: { x: 4, y: 2 },
+      color: '#707080',
+      fontWeight: '500'
     }).setOrigin(0.5);
     label.setDepth(14);
     
-    // Tiny white border for the label to make it pop
-    label.setStroke('#111', 1);
+    // Minimal Status Dot instead of massive emoji bubbles
+    const statusDot = this.add.circle(deskX + 10, deskY - 14, 3, this.getStatusColor(agent.status));
+    statusDot.setStrokeStyle(1, 0x000000);
+    statusDot.setDepth(15);
 
-    // Status Bubble
-    const statusBubble = this.add.container(targetX + 18, targetY - 24);
-    statusBubble.setDepth(15);
-    
-    const bubbleBg = this.add.graphics();
-    bubbleBg.fillStyle(0xffffff, 1);
-    bubbleBg.fillRoundedRect(-12, -10, 24, 20, 4);
-    bubbleBg.lineStyle(1, 0x000000, 1);
-    bubbleBg.strokeRoundedRect(-12, -10, 24, 20, 4);
-
-    const bubbleText = this.add.text(0, 0, this.getStatusIcon(agent.status), {
-      fontFamily: 'system-ui, sans-serif',
-      fontSize: '11px',
-      color: '#000000',
-      fontWeight: 'bold'
-    }).setOrigin(0.5);
-
-    statusBubble.add([bubbleBg, bubbleText]);
-
-    this.tweens.add({
-      targets: [sprite, glow],
-      y: targetY - 2,
-      duration: 1500 + Math.random() * 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+    // Hover effect
+    sprite.on('pointerover', () => {
+      label.setText(agent.name);
+      label.setColor('#ffffff');
+    });
+    sprite.on('pointerout', () => {
+      label.setText(homeDesk.label);
+      label.setColor('#707080');
     });
 
-    this.agentVisuals.set(agent.id, { sprite, shadow, label, statusBubble, bubbleText, glow, targetX, targetY });
+    const visual: AgentVisual = { 
+      sprite, shadow, label, statusDot, glow, 
+      targetX: deskX, targetY: deskY, isWandering: false, homeDesk 
+    };
+
+    this.agentVisuals.set(agent.id, visual);
+    this.startWanderingLoop(agent.id);
   }
 
-  private updateAgentVisual(agent: Agent, targetX: number, targetY: number): void {
+  private updateAgentVisual(agent: Agent, deskX: number, deskY: number): void {
     const visual = this.agentVisuals.get(agent.id);
     if (!visual) return;
 
-    visual.bubbleText.setText(this.getStatusIcon(agent.status));
-    visual.label.setText(agent.name.toUpperCase());
-    visual.glow.setFillStyle(this.getColorHex(agent.color), 0.15);
+    visual.statusDot.setFillStyle(this.getStatusColor(agent.status));
+    visual.glow.setFillStyle(this.getColorHex(agent.color), 0.1);
 
-    if (visual.targetX !== targetX || visual.targetY !== targetY) {
-      visual.targetX = targetX;
-      visual.targetY = targetY;
-
-      this.tweens.add({
-        targets: [visual.sprite, visual.shadow, visual.label, visual.statusBubble, visual.glow],
-        x: targetX,
-        y: targetY,
-        duration: 800,
-        ease: 'Power2',
-      });
-    }
+    if (agent.status === 'working') {
+      visual.isWandering = false;
+      this.moveToPoint(visual, deskX, deskY);
+    } 
   }
 
-  private getStatusIcon(status: AgentStatus): string {
+  private startWanderingLoop(agentId: string) {
+    const visual = this.agentVisuals.get(agentId);
+    if (!visual) return;
+
+    visual.wanderingEvent = this.time.addEvent({
+      delay: Phaser.Math.Between(4000, 8000),
+      loop: true,
+      callback: () => {
+        // If the dot is orange (working), do not wander
+        const isWorking = visual.statusDot.fillColor === 0xf59e0b;
+        
+        if (!isWorking) {
+          visual.isWandering = true;
+          // Confine wandering specifically to the agent's home room bounds
+          const b = visual.homeDesk.bounds;
+          
+          // Shrink bounds slightly to avoid walking ON the walls
+          const margin = 32;
+          const targetX = Phaser.Math.Between(b.x + margin, b.x + b.w - margin);
+          const targetY = Phaser.Math.Between(b.y + margin, b.y + b.h - margin);
+          
+          this.moveToPoint(visual, targetX, targetY);
+        }
+      }
+    });
+  }
+
+  private moveToPoint(visual: AgentVisual, x: number, y: number) {
+    if (visual.targetX === x && visual.targetY === y) return;
+
+    if (x < visual.sprite.x) {
+      visual.sprite.setFlipX(true);
+    } else if (x > visual.sprite.x) {
+      visual.sprite.setFlipX(false);
+    }
+
+    visual.targetX = x;
+    visual.targetY = y;
+
+    const distance = Phaser.Math.Distance.Between(visual.sprite.x, visual.sprite.y, x, y);
+    const duration = distance * 15; 
+
+    this.tweens.killTweensOf([visual.sprite, visual.shadow, visual.label, visual.statusDot, visual.glow]);
+
+    this.tweens.add({
+      targets: [visual.sprite, visual.shadow, visual.label, visual.statusDot, visual.glow],
+      x: x,
+      y: y,
+      duration: Math.max(duration, 800),
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: [visual.sprite, visual.glow],
+          y: y - 2,
+          duration: 1200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
+    });
+  }
+
+  private getStatusColor(status: AgentStatus): number {
     switch (status) {
-      case 'thinking': return '...';
-      case 'working': return '⚡';
-      case 'blocked': return '!';
-      case 'done': return '✓';
-      case 'walking': return '➤';
+      case 'thinking': return 0x3b82f6; // Blue
+      case 'working': return 0xf59e0b;  // Orange
+      case 'blocked': return 0xef4444;  // Red
+      case 'done': return 0x10b981;     // Green
+      case 'walking': return 0x8b5cf6;  // Purple
       case 'idle':
-      default: return 'z';
+      default: return 0x9ca3af;         // Gray
     }
   }
 

@@ -23,37 +23,40 @@ function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
         />
 
-        {/* 3-Column Bento Box Workspace */}
+        {/* 2-Row Bento Box Workspace */}
         <div className="workspace">
           
-          {/* Left Column: Office (Clean Tilemap) */}
+          {/* Top Row: Office (Landscape Tilemap) */}
           <div className="panel office-column">
-            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-              <span>| AGENT WORKSPACE</span>
-              <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }}></div>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', height: '32px', background: 'transparent', borderBottom: '1px solid #2c2c3b' }}>
+              <span style={{ color: '#9090a2' }}>HQ — LIVE AGENT SIMULATION</span>
+              <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }}></div>
                 ONLINE
               </span>
             </div>
             <div className="panel-content" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ flex: 1, position: 'relative' }}>
+              <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <OfficeCanvas />
               </div>
             </div>
           </div>
 
-          {/* Center Column: Multi-Terminal Pane (Mosaic) */}
-          <div className="terminal-column" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
-             <MultiTerminalPanel />
-          </div>
-
-          {/* Right Column: Original Rules & Blueprint Panel */}
-          <div className="panel tasks-column">
-            <div className="panel-header">
-              <span style={{ color: '#f8f8fb' }}>| BLUEPRINT RULES</span>
+          {/* Bottom Row: Terminal + Rules */}
+          <div className="workspace-bottom">
+            {/* Center Column: Multi-Terminal Pane (Mosaic) */}
+            <div className="terminal-column" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
+               <MultiTerminalPanel />
             </div>
-            <div className="panel-content">
-              <RulesPanel />
+
+            {/* Right Column: Blueprint Panel */}
+            <div className="panel tasks-column">
+              <div className="panel-header">
+                <span style={{ color: '#f8f8fb' }}>| BLUEPRINT RULES</span>
+              </div>
+              <div className="panel-content">
+                <RulesPanel />
+              </div>
             </div>
           </div>
 
