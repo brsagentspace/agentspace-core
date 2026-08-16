@@ -1,0 +1,249 @@
+# AgentSpace Blueprint — Python ML/AI Pipeline
+# Miras: _base.yaml (tüm evrensel kurallar geçerli)
+
+id: "ml-python-pipeline"
+version: "1.0.0"
+name: "Python ML / AI Pipeline"
+project_type: "ml"
+inherits: "_base"
+
+description: |
+  Python tabanlı makine öğrenmesi ve yapay zeka pipeline şablonu.
+  Veri işleme, model eğitimi, değerlendirme ve API servis etme adımlarını kapsar.
+  MLflow ile deney takibi, FastAPI ile model serving yapılır.
+
+tags: ["ml", "python", "pytorch", "fastapi", "mlflow", "data-science", "ai"]
+
+# ─────────────────────────────────────────────
+# MİMARİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Pipeline Architecture (ETL → Train → Evaluate → Serve)"
+  description: |
+    ML projesi ayrı aşamalı bir pipeline olarak düzenlenir.
+    Her aşama bağımsız çalışabilir ve test edilebilir.
+    Deney takibi MLflow ile yapılır — sonuçlar reproducible olmalı.
+
+  stages:
+    data_ingestion: "Ham veri kaynaklarından veri toplama"
+    data_processing: "Temizleme, dönüştürme, feature engineering"
+    model_training: "Model eğitimi + hyperparameter tuning"
+    model_evaluation: "Metrik hesaplama + validasyon"
+    model_registry: "MLflow ile model versiyonlama"
+    model_serving: "FastAPI REST API veya batch inference"
+
+  frameworks:
+    deep_learning: "PyTorch (birincil)"
+    classical_ml: "scikit-learn"
+    data: "Pandas + Polars (büyük veri için Polars)"
+    experiment_tracking: "MLflow"
+    serving: "FastAPI"
+    data_validation: "Pydantic v2 + Great Expectations"
+
+# ─────────────────────────────────────────────
+# KLASÖR YAPISI
+# ─────────────────────────────────────────────
+folder_structure:
+  root:
+    src/:
+      data/:
+        ingestion/: "Veri kaynaklarından ham veri çekme"
+        processing/: "Temizleme, normalizasyon, feature engineering"
+        validation/: "Great Expectations veri kalite kuralları"
+        datasets/: "PyTorch Dataset sınıfları"
+
+      models/:
+        architectures/: "Model ağ yapıları (PyTorch nn.Module)"
+        trainers/: "Eğitim döngüleri ve optimizasyon mantığı"
+        evaluators/: "Metrik hesaplama (accuracy, F1, AUROC...)"
+        callbacks/: "Early stopping, model checkpoint"
+
+      pipeline/:
+        train_pipeline.py: "Uçtan uca eğitim pipeline'ı"
+        eval_pipeline.py: "Değerlendirme pipeline'ı"
+        inference_pipeline.py: "Çıkarım pipeline'ı"
+
+      serving/:
+        api/:
+          main.py: "FastAPI app"
+          routes/: "Endpoint tanımları"
+          schemas/: "Pydantic request/response modelleri"
+          middleware/: "Auth, rate limit, logging"
+        predictor.py: "Model yükleme ve tahmin mantığı"
+
+      utils/:
+        logging.py: "Yapılandırılmış loglama (structlog)"
+        config.py: "Hydra/dynaconf konfigürasyon yönetimi"
+        reproducibility.py: "Seed yönetimi"
+        metrics.py: "Özel metrik hesaplamaları"
+
+    configs/:
+      model/: "Model hyperparameter konfigürasyonları (YAML)"
+      training/: "Eğitim konfigürasyonları"
+      data/: "Veri yolu ve işleme konfigürasyonları"
+
+    notebooks/:
+      exploration/: "EDA notebook'ları (keşifsel, geçici)"
+      experiments/: "Deney notebook'ları"
+      rule: "Notebook'lar keşif içindir, üretim kodu buraya taşınmaz"
+
+    tests/:
+      unit/: "Utility ve transform fonksiyon testleri"
+      integration/: "Pipeline entegrasyon testleri"
+      data/: "Veri kalite testleri"
+
+    mlruns/: "MLflow deney logları (gitignore'da)"
+    models/: "Kaydedilmiş model artifactları (gitignore'da)"
+    data/: "Veri dizini (gitignore'da — sadece küçük sample'lar)"
+
+# ─────────────────────────────────────────────
+# KOD STANDARTLARI
+# ─────────────────────────────────────────────
+code_standards:
+  language: "Python 3.11+"
+  type_hints: "Zorunlu — mypy strict mode ile kontrol"
+  formatter: "Ruff (format + lint — Black yerine)"
+  linter: "Ruff + mypy"
+
+  reproducibility:
+    - "Her deney benzersiz seed kullanır ve MLflow'a kaydeder"
+    - "Kullanılan tüm kütüphane sürümleri requirements.txt veya pyproject.toml'da sabitlenir"
+    - "Model training script'leri komut satırı argümanları olmadan çalışmaz — config dosyası şart"
+    - "Random seed: torch, numpy, random, os.environ['PYTHONHASHSEED'] hepsi set edilir"
+
+  experiment_tracking:
+    - "Her eğitim MLflow run olarak loglanır"
+    - "Loglanacak minimum: hyperparameters, train/val metrics, model artifact"
+    - "MLflow run adı anlamlı olmalı: '{model_tipi}_{tarih}_{kısa_açıklama}'"
+    - "En iyi model MLflow Model Registry'ye 'Staging' olarak promote edilir"
+
+  data_handling:
+    - "Ham veri asla üzerine yazılmaz — immutable, append-only"
+    - "Veri dönüşümleri her zaman yeni dosyaya yazar (versiyonlanmış)"
+    - "Büyük dosyalar (>100MB) Git'e commit edilmez — DVC veya S3 kullanılır"
+    - "Veri yolları hard-coded değil — config dosyasından okunur"
+
+  model_code:
+    - "nn.Module sınıfları forward() metodunda açıklayıcı yorum taşır"
+    - "Model input/output şekilleri (shape) docstring'de belgelenir"
+    - "Custom loss fonksiyonları ayrı dosyada ve test ile"
+    - "Model boyutu (parametre sayısı) log edilir"
+
+  api_serving:
+    - "Her endpoint Pydantic v2 ile request/response validate edilir"
+    - "Model yükleme startup'ta yapılır — request başına değil"
+    - "Inference timeout tanımlanır"
+    - "Health check endpoint: GET /health (model yüklü mü, GPU durumu)"
+    - "Batch inference: tek tek değil, batch olarak işlenir"
+
+  performance:
+    - "GPU kullanımı varsa: DataLoader num_workers ve pin_memory ayarlanır"
+    - "Mixed precision: torch.cuda.amp (varsa)"
+    - "Gradient accumulation: küçük batch size durumunda"
+    - "Model quantization: inference'da INT8 (gerekirse)"
+
+  forbidden:
+    - "Jupyter notebook'ta üretim kodu — notebook sadece keşif"
+    - "Global değişken olarak model (thread-safe değil)"
+    - "Hard-coded veri yolu veya model yolu"
+    - "MLflow olmadan model kaydetme"
+    - "Test coverage olmadan yeni pipeline bileşeni"
+
+# ─────────────────────────────────────────────
+# TEST STRATEJİSİ
+# ─────────────────────────────────────────────
+testing:
+  framework: "pytest + pytest-cov"
+  coverage_minimum: 70  # %
+  strategy:
+    unit: "Transform fonksiyonları, metrik hesaplamaları, utility'ler"
+    data_quality: "Great Expectations ile veri doğrulama kuralları"
+    model_smoke: "Küçük batch ile forward pass — boyut ve tip kontrolü"
+    api: "FastAPI TestClient ile endpoint testleri"
+    integration: "Uçtan uca pipeline (küçük sample data)"
+
+  rules:
+    - "Her data transform fonksiyonu: input/output şekil testi"
+    - "Her metrik hesaplama: bilinen değerlerle edge case testi"
+    - "Model forward pass: gradient flow testi (model öğreniyor mu?)"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  ml_architect:
+    count: 1
+    model_tier: 1
+    color: "blue"
+    responsibilities:
+      - "Problem tanımı → model seçimi (classification/regression/generation)"
+      - "Feature engineering stratejisi belirle"
+      - "Eğitim pipeline'ı tasarla"
+      - "Baseline modeli seç ve MLflow deneyi başlat"
+
+  data_engineer:
+    count: 1
+    model_tier: 2
+    color: "yellow"
+    responsibilities:
+      - "Veri ingestion ve işleme pipeline'larını yaz"
+      - "Feature engineering dönüşümlerini implement et"
+      - "Great Expectations veri kalite kurallarını tanımla"
+      - "PyTorch Dataset ve DataLoader'ları oluştur"
+
+  ml_engineer:
+    count: 1
+    model_tier: 2
+    color: "yellow"
+    responsibilities:
+      - "Model mimarisini implement et (PyTorch)"
+      - "Eğitim döngüsünü yaz"
+      - "MLflow ile deney takibini entegre et"
+      - "Model değerlendirme raporunu oluştur"
+
+  api_developer:
+    count: 1
+    model_tier: 2
+    color: "green"
+    responsibilities:
+      - "FastAPI serving katmanını yaz"
+      - "Model yükleme ve inference optimizasyonu"
+      - "Docker imajını hazırla"
+
+  qa_engineer:
+    count: 1
+    model_tier: 3
+    color: "red"
+    responsibilities:
+      - "Veri kalite testlerini yaz"
+      - "Model smoke testlerini yaz"
+      - "API endpoint testlerini yaz"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen bir ML mühendisi ve Python uzmanısın. PyTorch, MLflow ve FastAPI kullanıyorsun."
+  - "Her deney MLflow run olarak loglanır: hyperparameters + metrics + model artifact."
+  - "Reproducibility: seed her yerde (torch, numpy, random) set edilir ve MLflow'a kaydedilir."
+  - "Veri pipeline'ı: ham veri → işlenmiş → feature → dataset. Her adım ayrı, test edilebilir."
+  - "Kod Jupyter'da değil, src/ altında modüler Python dosyalarında yazılır."
+  - "API serving: model startup'ta yüklenir, her request'te değil. Pydantic v2 ile validation zorunlu."
+
+# ─────────────────────────────────────────────
+# YAYINLAMA
+# ─────────────────────────────────────────────
+deployment:
+  training:
+    local: "python -m src.pipeline.train_pipeline --config configs/training/default.yaml"
+    cloud: "Google Cloud Run Jobs / AWS Batch / Modal"
+
+  serving:
+    containerization: "Docker (multi-stage)"
+    local: "uvicorn src.serving.api.main:app --reload"
+    production: "Docker → Cloud Run / Railway / VPS"
+
+  model_versioning:
+    registry: "MLflow Model Registry"
+    stages: ["None", "Staging", "Production", "Archived"]
+    promotion: "Staging → Production yalnızca evaluation eşiği geçilince"

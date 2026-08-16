@@ -1,0 +1,237 @@
+# AgentSpace Blueprint — React Native Mobil Projesi
+# Miras: _base.yaml (tüm evrensel kurallar geçerli)
+
+id: "mobile-react-native"
+version: "1.0.0"
+name: "React Native / Expo Mobil Projesi"
+project_type: "mobile"
+inherits: "_base"
+
+description: |
+  iOS ve Android için React Native + Expo tabanlı mobil uygulama geliştirme şablonu.
+  Feature-Sliced Design mimarisi, Zustand state yönetimi ve Expo Router kullanılır.
+
+tags: ["mobile", "react-native", "expo", "typescript", "ios", "android"]
+
+# ─────────────────────────────────────────────
+# MİMARİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Feature-Sliced Design (FSD)"
+  description: |
+    Uygulama feature'lara bölünür. Her feature kendi içinde tam bir dikey dilim taşır:
+    kendi state'i, kendi API katmanı, kendi UI bileşenleri. Böylece feature'lar
+    birbirinden bağımsız gelişir ve test edilebilir.
+
+  state_management:
+    global: "Zustand"
+    server: "TanStack Query (React Query)"
+    local: "useState / useReducer"
+    rules:
+      - "Context API global state için kullanılmaz — sadece tema veya locale gibi statik config'ler için"
+      - "useEffect içine business logic yazılmaz — custom hook'lara taşınır"
+      - "Server state ile client state asla karıştırılmaz"
+
+  navigation: "Expo Router (file-based routing)"
+
+  styling:
+    library: "StyleSheet API (React Native native)"
+    alternative: "NativeWind (Tailwind-for-RN) — müşteri tercihine göre"
+    rules:
+      - "Inline style yasak — StyleSheet.create kullanılır"
+      - "Platform-specific style'lar Platform.select ile yönetilir"
+
+# ─────────────────────────────────────────────
+# KLASÖR YAPISI
+# ─────────────────────────────────────────────
+folder_structure:
+  root:
+    app/:
+      description: "Expo Router route tanımları (sayfa dosyaları)"
+      "(tabs)/": "Tab navigator route'ları"
+      "(auth)/": "Auth akışı route'ları"
+      "_layout.tsx": "Root layout"
+
+    src/:
+      features/:
+        description: "Her feature kendi dikey dilimidir"
+        "{feature-name}/":
+          api/: "Sadece bu feature'a ait API çağrıları"
+          components/: "Sadece bu feature'a ait bileşenler"
+          hooks/: "Sadece bu feature'a ait custom hook'lar"
+          store/: "Zustand slice (sadece bu feature)"
+          types/: "Bu feature'a ait TypeScript tipleri"
+          index.ts: "Public API — dışarıya sadece buradan export"
+
+      shared/:
+        description: "Tüm feature'ların kullandığı ortak kod"
+        components/: "Evrensel UI bileşenleri (Button, Input, Card...)"
+        hooks/: "Evrensel custom hook'lar"
+        utils/: "Pure utility fonksiyonlar"
+        constants/: "Uygulama geneli sabitler"
+        types/: "Paylaşılan TypeScript tipleri"
+        lib/: "3. parti kütüphane konfigürasyonları"
+
+      entities/:
+        description: "Domain nesneleri (iş mantığı modelleri)"
+        "{entity}/":
+          model.ts: "TypeScript interface/type tanımları"
+          api.ts: "Entity ile ilgili API çağrıları"
+
+    assets/: "Görseller, fontlar, animasyonlar"
+    __tests__/: "Integration ve E2E testler"
+
+# ─────────────────────────────────────────────
+# KOD STANDARTLARI
+# ─────────────────────────────────────────────
+code_standards:
+  language: "TypeScript (strict mode)"
+  typescript_rules:
+    - "strict: true — tsconfig'de zorunlu"
+    - "any tipi yasak — unknown veya explicit tip kullanılır"
+    - "Interface'ler 'I' prefix'i olmadan tanımlanır (User değil IUser)"
+    - "Props tipleri her bileşenin üstünde export edilir"
+
+  component_rules:
+    - "Her bileşen tek bir dosyada: component + style + test"
+    - "Bileşenler pure olmalı — yan etkiler hook'lara taşınır"
+    - "Props sayısı max 7 — fazlası config objesi haline getirilir"
+    - "Bileşen default export'u dosya adıyla aynı olmalı"
+
+  performance:
+    - "FlatList yerine FlashList kullanılır (100+ item listeler)"
+    - "Ağır hesaplamalar useMemo / useCallback ile memoize edilir"
+    - "Image bileşenlerinde lazy loading zorunlu"
+    - "Bundle analyzer her sprint sonunda çalıştırılır: npx expo export --analyze"
+    - "Gereksiz re-render'lar React DevTools Profiler ile tespit edilir"
+
+  forbidden:
+    - "Context API global state için kullanılmaz"
+    - "useEffect içinde business logic olmaz"
+    - "Inline style (style={{ color: 'red' }}) yasak"
+    - "any tipi yasak"
+    - "Platform-specific kod (if Platform.OS) bileşen içinde değil, ayrı dosyada"
+
+# ─────────────────────────────────────────────
+# ERİŞİLEBİLİRLİK
+# ─────────────────────────────────────────────
+accessibility:
+  rules:
+    - "Her tıklanabilir öğe accessibilityLabel taşır"
+    - "Her icon bileşenine accessibilityRole ve accessibilityLabel eklenir"
+    - "Renk körü dostu kontrast: min 4.5:1 (WCAG AA)"
+    - "Touch target minimum 44x44pt (iOS Human Interface Guidelines)"
+    - "Ekran okuyucu (VoiceOver/TalkBack) ile test zorunlu"
+
+# ─────────────────────────────────────────────
+# TEST STRATEJİSİ
+# ─────────────────────────────────────────────
+testing:
+  framework: "Jest + React Native Testing Library"
+  coverage_minimum: 75  # % (base'deki 70'in üstünde)
+  strategy:
+    unit: "Her custom hook ve utility fonksiyon test edilir"
+    component: "Her shared/component render testi alır"
+    integration: "Feature akışları (login, checkout) uçtan uca test edilir"
+    e2e: "Detox (Phase 2)"
+
+  rules:
+    - "Test dosyaları: {komponent-adı}.test.tsx"
+    - "userEvent kullanılır, fireEvent değil (React Native Testing Library)"
+    - "Mock'lar minimum — gerçek API response'larına benzer test data"
+
+# ─────────────────────────────────────────────
+# TASARIM SÜRECİ (ÖZGÜN — KOPYA DEĞİL)
+# ─────────────────────────────────────────────
+design_process:
+  critical_note: |
+    Referans proje yalnızca MİMARİ SÜREÇ için kullanılır.
+    Renk paleti, tipografi ve UI dili her projede sıfırdan tasarlanır.
+    Ajanlar yeni projede özgün bir tasarım sistemi oluşturur.
+
+  component_hierarchy: "Atomic Design (atom → molecule → organism → template → screen)"
+
+  spacing:
+    system: "8pt grid"
+    values: [4, 8, 12, 16, 24, 32, 48, 64]  # px/dp
+    rule: "Tüm margin ve padding değerleri bu listeden seçilir"
+
+  typography:
+    rule: "Max 2 font family, max 3 weight"
+    sizes: "Yeni projede özgün type scale tanımlanır"
+    line_height: "Body için 1.5x, Heading için 1.2x"
+
+  animation:
+    library: "React Native Reanimated (v3)"
+    rules:
+      - "Animasyon süresi: micro (150ms), standard (300ms), complex (500ms)"
+      - "useNativeDriver: true — tüm transform animasyonlarında zorunlu"
+      - "Reduced motion tercihi kontrol edilir (AccessibilityInfo)"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  architect:
+    count: 1
+    model_tier: 1  # Claude Sonnet / GPT-4o
+    color: "blue"  # Ofisteki robot rengi
+    responsibilities:
+      - "Proje yapısını kur ve Feature-Sliced Design şemasını oluştur"
+      - "Shared component library'yi tasarla"
+      - "Kritik mimari kararları al ve Knowledge Graph'e kaydet"
+      - "Expo konfigürasyonunu (eas.json, app.config.ts) hazırla"
+
+  frontend_developer:
+    count: 2  # Paralel çalışabilir — farklı feature'lar
+    model_tier: 2  # Claude Haiku / GPT-4o-mini
+    color: "yellow"
+    responsibilities:
+      - "Feature bileşenlerini yaz"
+      - "Zustand store slice'larını oluştur"
+      - "TanStack Query hook'larını implement et"
+      - "Expo Router route'larını bağla"
+
+  qa_engineer:
+    count: 1
+    model_tier: 2
+    color: "red"
+    responsibilities:
+      - "Unit ve component testlerini yaz"
+      - "Accessibility kontrolü yap"
+      - "Performance profiling (FlashList, memoization)"
+
+  code_reviewer:
+    count: 1
+    model_tier: 3  # Gemini Flash (ucuz, hızlı)
+    color: "green"
+    responsibilities:
+      - "PR'ları bu blueprint kurallarına göre incele"
+      - "TypeScript tip hatalarını tespit et"
+      - "Console.log ve dead code kontrolü"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED (Ajan bu projeye başlarken yükler)
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen bir React Native ve Expo uzmanısın. TypeScript strict mode kullanıyorsun."
+  - "Feature-Sliced Design mimarisini uyguluyorsun. Her feature kendi dikey diliminde yaşıyor."
+  - "State management: Zustand (global) + TanStack Query (server state). Context API global state için kullanma."
+  - "Her yeni feature için önce klasör yapısını oluştur, sonra TypeScript tiplerini tanımla, sonra kodu yaz."
+  - "Bir mimari karar verdiğinde 'DECISION: [karar]' formatında logla."
+  - "Görsel tasarım: referans projeyi kopyalama. Yeni proje için özgün renk paleti ve tipografi sistemi oluştur."
+
+# ─────────────────────────────────────────────
+# YAYINLAMA (Deployment)
+# ─────────────────────────────────────────────
+deployment:
+  tool: "EAS Build (Expo Application Services)"
+  environments:
+    development: "expo start --dev-client"
+    staging: "eas build --profile preview"
+    production: "eas build --profile production"
+
+  ci_cd:
+    - "Her PR'da: TypeScript check + lint + test"
+    - "Main merge'de: EAS preview build otomatik"
+    - "Tag push'ta: EAS production build + store submit"

@@ -1,0 +1,220 @@
+# AgentSpace Blueprint — Rust Yüksek Performanslı Servis
+# Miras: _base.yaml (tüm evrensel kurallar geçerli)
+
+id: "backend-rust-service"
+version: "1.0.0"
+name: "Rust / Axum Yüksek Performanslı Servis"
+project_type: "backend"
+inherits: "_base"
+
+description: |
+  Rust + Axum tabanlı, yüksek performanslı ve tip güvenli backend servisi şablonu.
+  SQLx ile async veritabanı, Tower middleware katmanı ve OpenAPI dokümantasyonu içerir.
+  Bellek güvenliği ve sıfır maliyetli soyutlama Rust'ın garantisidir.
+
+tags: ["backend", "rust", "axum", "sqlx", "async", "performance", "systems"]
+
+# ─────────────────────────────────────────────
+# MİMARİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Hexagonal Architecture (Ports & Adapters)"
+  description: |
+    İş mantığı (domain) dış sistemlerden (DB, HTTP) tamamen izole edilir.
+    Domain core hiçbir dış kütüphaneye bağımlı değildir — saf Rust.
+    Adapters (HTTP handler, DB repository) domain'i implemente eder.
+
+  layers:
+    domain:
+      description: "Saf iş mantığı — dış bağımlılık sıfır"
+      contents: ["Entity struct'lar", "Domain service trait'leri", "Value object'ler", "Domain error'ları"]
+
+    application:
+      description: "Use case'ler — domain'i orkestre eder"
+      contents: ["Use case struct'lar", "Command/Query handler'lar"]
+
+    infrastructure:
+      description: "Dış sistem adaptörleri"
+      contents: ["SQLx repository implementasyonları", "Axum HTTP handler'lar", "Harici servis client'ları"]
+
+  http_framework: "Axum (Tokio tabanlı)"
+  database_driver: "SQLx (async, compile-time SQL kontrolü)"
+  validation: "validator crate + custom domain validation"
+  auth: "JWT (jsonwebtoken crate) + Argon2 (şifre hash)"
+  api_docs: "utoipa (OpenAPI 3.0 — macro tabanlı)"
+
+# ─────────────────────────────────────────────
+# KLASÖR YAPISI
+# ─────────────────────────────────────────────
+folder_structure:
+  root:
+    src/:
+      domain/:
+        entities/: "Domain entity struct'ları (User, Order...)"
+        services/: "Domain service trait tanımları"
+        errors.rs: "Domain hata tipleri (thiserror)"
+        mod.rs: "Public domain API"
+
+      application/:
+        "{use_case}/":
+          command.rs: "Input struct (Command/Query)"
+          handler.rs: "Use case implementasyonu"
+        mod.rs: ""
+
+      infrastructure/:
+        http/:
+          handlers/: "Axum route handler fonksiyonları"
+          middleware/: "Auth, rate limit, logging middleware"
+          router.rs: "Route tanımları"
+          extractors/: "Custom Axum extractor'lar"
+
+        database/:
+          repositories/: "SQLx ile DB implementasyonları"
+          migrations/: "SQL migration dosyaları"
+          mod.rs: ""
+
+        external/: "Harici servis client'ları (email, payment...)"
+
+      config.rs: "Ortam değişkeni yönetimi (dotenvy + serde)"
+      errors.rs: "Uygulama geneli hata tipleri"
+      state.rs: "Axum AppState (DB pool, config...)"
+      main.rs: "Uygulama başlangıç noktası"
+
+    tests/:
+      integration/: "Axum TestClient ile entegrasyon testleri"
+
+    migrations/: "SQLx migration dosyaları (.sql)"
+    Dockerfile: "Multi-stage Rust Docker build"
+    docker-compose.yml: "Lokal geliştirme (app + postgres)"
+
+# ─────────────────────────────────────────────
+# KOD STANDARTLARI
+# ─────────────────────────────────────────────
+code_standards:
+  language: "Rust (edition 2021, stable toolchain)"
+
+  rust_idioms:
+    - "unwrap() ve expect() üretim kodunda yasak — ? operatörü ve proper error handling"
+    - "clone() minimize edilir — referans ve borrowing tercih edilir"
+    - "Box<dyn Error> yerine anyhow veya thiserror kullanılır"
+    - "Async fonksiyonlar gerçekten async olduğunda kullanılır — gereksiz async/await eklenmez"
+    - "Primitive obsession: newtype pattern ile type safety sağlanır (UserId(Uuid) gibi)"
+
+  error_handling:
+    - "thiserror: domain ve altyapı hataları için"
+    - "anyhow: uygulama düzeyinde hata propagation için"
+    - "Her hata tipi Into<StatusCode> implement eder (HTTP mapping için)"
+    - "Hata mesajları kullanıcıya dönecekse iç detay içermez"
+
+  database:
+    - "SQLx compile-time sorgu doğrulaması: sqlx::query_as! makrosu"
+    - "Her sorgu .fetch_one() / .fetch_all() / .execute() ile açık"
+    - "Transaction: sqlx::Transaction ile — işlem başında begin, bitişte commit/rollback"
+    - "N+1 sorgu önlemi: JOIN sorguları ile"
+    - "Migration'lar sqlx migrate tool ile yönetilir"
+
+  async_patterns:
+    - "Tokio runtime — multi-threaded executor"
+    - "CPU-yoğun işlemler tokio::task::spawn_blocking ile thread pool'a gönderilir"
+    - "timeout::timeout ile async operasyonlara süre limiti"
+    - "Graceful shutdown: tokio::signal ile SIGTERM dinlenir"
+
+  security:
+    - "Argon2id: şifre hashing (bcrypt değil — daha güçlü)"
+    - "JWT: kısa ömürlü access (15dk) + refresh token (7gün)"
+    - "SQL injection: SQLx parameterized queries — raw string interpolation yasak"
+    - "Rate limiting: tower-governor middleware"
+    - "CORS: tower-http CORS layer — explicit origin"
+    - "Secret'lar: ortam değişkeni, asla source code'da"
+
+  performance:
+    - "Connection pool: sqlx PgPool — max_connections ortama göre ayarlanır"
+    - "JSON serialization: serde_json (varsayılan) veya sonic-rs (yüksek throughput)"
+    - "Response compression: tower-http CompressionLayer"
+    - "Zero-copy: &str ve Bytes tercih edilir, String cloning minimize"
+
+  testing:
+    - "Unit test: #[cfg(test)] mod tests her dosyada"
+    - "Integration test: tests/ dizininde, gerçek test DB"
+    - "Axum TestClient: axum::serve + hyper Client"
+    - "sqlx TestTransaction: test sonunda rollback (DB temiz kalır)"
+
+  forbidden:
+    - "unwrap() / expect() üretim kodunda"
+    - "unsafe block — gerçekten kaçınılmazsa detaylı yorum şart"
+    - "String format! ile SQL sorgusu oluşturma"
+    - "std::thread::sleep (async context'te) — tokio::time::sleep kullanılır"
+    - "Arc<Mutex<T>> gereksiz kullanım — önce lock-free alternatif düşünülür"
+
+# ─────────────────────────────────────────────
+# TEST STRATEJİSİ
+# ─────────────────────────────────────────────
+testing:
+  framework: "Rust built-in test framework + tokio::test"
+  coverage_minimum: 75  # %  (cargo-llvm-cov)
+  strategy:
+    unit: "Domain entity ve service mantığı"
+    integration: "HTTP endpoint testleri (gerçek DB)"
+    property: "proptest ile edge case keşfi (opsiyonel)"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  architect:
+    count: 1
+    model_tier: 1
+    color: "blue"
+    responsibilities:
+      - "Domain entity ve servis trait'lerini tasarla"
+      - "SQLx schema ve migration'ları planla"
+      - "Axum router yapısını kur"
+      - "AppState bileşenlerini belirle"
+
+  rust_developer:
+    count: 2
+    model_tier: 1  # Rust karmaşıksa Tier-1 — borrow checker hataları
+    color: "yellow"
+    responsibilities:
+      - "Domain entity ve use case'leri implement et"
+      - "SQLx repository'leri yaz"
+      - "Axum handler'ları implement et"
+      - "Middleware'leri ekle"
+
+  qa_engineer:
+    count: 1
+    model_tier: 2
+    color: "red"
+    responsibilities:
+      - "Integration testlerini yaz"
+      - "Güvenlik testleri"
+      - "Load test senaryolarını hazırla (k6)"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen bir Rust uzmanısın. Axum, SQLx ve Tokio kullanıyorsun. Hexagonal Architecture uyguluyorsun."
+  - "unwrap() ve expect() yasak — ? operatörü ve thiserror/anyhow ile hata yönetimi yapıyorsun."
+  - "SQLx compile-time sorgu doğrulaması: sqlx::query_as! makrosu zorunlu."
+  - "Domain katmanı dış bağımlılıktan tamamen izole — saf Rust struct'lar ve trait'ler."
+  - "Borrow checker hatasıyla karşılaşırsan önce ownership modelini yeniden düşün, clone() ile bypass etme."
+  - "Her async fonksiyon gerçekten async olmak zorunda mı? CPU-yoğunsa spawn_blocking kullan."
+
+# ─────────────────────────────────────────────
+# YAYINLAMA
+# ─────────────────────────────────────────────
+deployment:
+  build:
+    development: "cargo run"
+    release: "cargo build --release (boyut için strip + LTO aktif)"
+    docker: "Multi-stage: builder (rust:slim) → runtime (debian:slim)"
+
+  binary_size_optimization:
+    - "Cargo.toml: [profile.release] opt-level = 'z', lto = true, codegen-units = 1"
+    - "strip = true — debug sembollerini kaldır"
+    - "upx ile ek sıkıştırma (opsiyonel)"
+
+  environments:
+    local: "cargo run + docker-compose (postgres)"
+    production: "Docker imaj → VPS / Cloud Run / Fly.io"

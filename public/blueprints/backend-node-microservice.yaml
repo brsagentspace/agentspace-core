@@ -1,0 +1,230 @@
+# AgentSpace Blueprint — Node.js Mikro Servis
+# Miras: _base.yaml (tüm evrensel kurallar geçerli)
+
+id: "backend-node-microservice"
+version: "1.0.0"
+name: "Node.js / Express Mikro Servis"
+project_type: "backend"
+inherits: "_base"
+
+description: |
+  Node.js + TypeScript tabanlı, production-ready mikro servis şablonu.
+  Layered Architecture, Prisma ORM, JWT auth ve OpenAPI dokümantasyonu içerir.
+  Docker ile containerize edilir, GitHub Actions CI/CD ile dağıtılır.
+
+tags: ["backend", "nodejs", "typescript", "microservice", "express", "prisma", "docker"]
+
+# ─────────────────────────────────────────────
+# MİMARİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Layered Architecture (Controller → Service → Repository)"
+  description: |
+    Her katman yalnızca bir altındaki katmanı bilir.
+    Controller → isteği alır, validate eder, Service'e iletir.
+    Service → iş mantığı, orchestration.
+    Repository → veritabanı işlemleri (Prisma).
+    Bu sınırlar asla geçilmez.
+
+  layers:
+    controller:
+      responsibility: "HTTP isteği alma, Zod validasyonu, response format"
+      rule: "Business logic içermez — sadece yönlendirir"
+
+    service:
+      responsibility: "İş mantığı, transaction yönetimi, harici servis çağrıları"
+      rule: "HTTP veya DB detayı bilmez — sadece domain mantığı"
+
+    repository:
+      responsibility: "Veritabanı CRUD işlemleri (Prisma)"
+      rule: "Sadece DB sorgular — iş mantığı içermez"
+
+  http_framework: "Express.js"
+  validation: "Zod"
+  orm: "Prisma"
+  auth: "JWT (jsonwebtoken) + bcrypt"
+  api_docs: "OpenAPI 3.0 (swagger-ui-express + zod-to-openapi)"
+
+# ─────────────────────────────────────────────
+# KLASÖR YAPISI
+# ─────────────────────────────────────────────
+folder_structure:
+  root:
+    src/:
+      modules/:
+        description: "Her domain entity kendi modülüdür"
+        "{module}/":
+          "{module}.controller.ts": "Route handler — HTTP katmanı"
+          "{module}.service.ts": "İş mantığı katmanı"
+          "{module}.repository.ts": "Veritabanı katmanı"
+          "{module}.routes.ts": "Express Router tanımı"
+          "{module}.schema.ts": "Zod validation şemaları"
+          "{module}.types.ts": "TypeScript tipleri"
+          "__tests__/":
+            "{module}.service.test.ts": "Service unit testleri"
+            "{module}.controller.test.ts": "Controller integration testleri"
+
+      shared/:
+        middleware/: "Auth, rate-limit, error handler, logger"
+        utils/: "Yardımcı fonksiyonlar (response helpers, date utils)"
+        errors/: "Custom error sınıfları (NotFoundError, ValidationError...)"
+        types/: "Global TypeScript tipleri"
+        config/: "Environment variable yönetimi (zod ile validate)"
+
+      lib/:
+        prisma.ts: "Prisma client singleton"
+        logger.ts: "Pino logger konfigürasyonu"
+        redis.ts: "Redis client (cache için — opsiyonel)"
+
+      app.ts: "Express app konfigürasyonu (middleware pipeline)"
+      server.ts: "HTTP server başlatma"
+
+    prisma/:
+      schema.prisma: "Veritabanı şeması"
+      migrations/: "Prisma migration dosyaları"
+      seed.ts: "Development seed"
+
+    Dockerfile: "Production Docker imajı"
+    docker-compose.yml: "Lokal geliştirme (app + db + redis)"
+    .env.example: "Tüm environment variable'lar"
+
+# ─────────────────────────────────────────────
+# KOD STANDARTLARI
+# ─────────────────────────────────────────────
+code_standards:
+  language: "TypeScript (strict mode, ES2022 target)"
+
+  error_handling:
+    - "Global error handler middleware — tüm uncaught error'lar buraya gelir"
+    - "Custom error sınıfları: AppError → NotFoundError, ValidationError, UnauthorizedError"
+    - "async route handler'lar asyncHandler wrapper ile sarılır (try/catch boilerplate yok)"
+    - "Hata mesajları production'da iç detay içermez"
+
+  logging:
+    library: "Pino (performanslı structured logging)"
+    rules:
+      - "Her request giriş ve çıkışı loglanır (Pino HTTP middleware)"
+      - "Log level: development'ta 'debug', production'da 'info'"
+      - "Sensitive data (şifre, token) asla log'a yazdırılmaz"
+      - "Hata log'ları stack trace içerir"
+
+  database:
+    - "Her Prisma sorgusu try/catch — veritabanı hataları AppError'a dönüştürülür"
+    - "N+1 sorgu önlemi: Prisma include/select ile"
+    - "Pagination: cursor-based (offset yerine) — büyük veri setleri için"
+    - "Soft delete: deletedAt timestamp alanı"
+    - "İndeksler: sık sorgulanan alanlar için Prisma schema'da tanımlanır"
+
+  api_design:
+    - "RESTful prensipleri: kaynak adları çoğul (users, products)"
+    - "HTTP metodları anlamlı: GET oku, POST oluştur, PUT/PATCH güncelle, DELETE sil"
+    - "Response formatı tutarlı: { success: bool, data: T, error?: string }"
+    - "Pagination: { data: T[], meta: { page, limit, total, totalPages } }"
+    - "Her endpoint OpenAPI dokümantasyonu taşır"
+
+  security:
+    - "Rate limiting: express-rate-limit — her endpoint'e uygun limit"
+    - "Helmet.js — güvenlik başlıkları"
+    - "CORS: explicit origin whitelist — wildcard yasak"
+    - "SQL injection: Prisma parametrized queries — raw query yasak"
+    - "JWT: kısa ömürlü access token (15dk) + uzun ömürlü refresh token (7gün)"
+    - "bcrypt cost factor: minimum 12"
+    - "Input sanitization: xss kütüphanesi"
+
+  performance:
+    - "Response compression: compression middleware"
+    - "Redis cache: sık okunan, nadiren değişen veriler için"
+    - "Database connection pooling: Prisma'nın connection_limit ayarı"
+    - "Async/await kullanılır — callback ve .then() zinciri yasak"
+
+  forbidden:
+    - "Controller'da business logic"
+    - "Service'de doğrudan Prisma sorgusu (Repository'yi atlatma)"
+    - "Raw SQL sorgusu (Prisma ORM şart)"
+    - "console.log (Pino logger kullanılır)"
+    - "process.env.X doğrudan kullanımı (config module üzerinden geçer)"
+    - "Herhangi bir endpoint'te rate limiting eksikliği"
+
+# ─────────────────────────────────────────────
+# TEST STRATEJİSİ
+# ─────────────────────────────────────────────
+testing:
+  framework: "Vitest + Supertest"
+  coverage_minimum: 80  # % (backend'de daha yüksek standart)
+  strategy:
+    unit: "Service katmanı — iş mantığı izole test edilir (Prisma mock)"
+    integration: "Controller + Route — Supertest ile HTTP level test (test DB)"
+    contract: "OpenAPI şeması ile response formatı doğrulanır"
+
+  rules:
+    - "Her service metodu unit testi alır"
+    - "Happy path + error path her iki senaryo test edilir"
+    - "Test database ayrı — production DB'ye dokunulmaz"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  architect:
+    count: 1
+    model_tier: 1
+    color: "blue"
+    responsibilities:
+      - "Prisma schema tasarla (tablolar, ilişkiler, indeksler)"
+      - "Modül sınırlarını belirle (hangi domain entities ayrı modül)"
+      - "Auth stratejisini tasarla (JWT flow)"
+      - "OpenAPI şeması taslağını oluştur"
+
+  backend_developer:
+    count: 2  # Paralel — farklı modüller
+    model_tier: 2
+    color: "yellow"
+    responsibilities:
+      - "Controller, Service, Repository katmanlarını yaz"
+      - "Zod validation şemalarını oluştur"
+      - "Prisma migration'larını yaz"
+      - "OpenAPI endpoint dokümantasyonunu ekle"
+
+  qa_engineer:
+    count: 1
+    model_tier: 2
+    color: "red"
+    responsibilities:
+      - "Service unit testlerini yaz"
+      - "Controller integration testlerini yaz (Supertest)"
+      - "Güvenlik testleri (auth, rate limit)"
+
+  code_reviewer:
+    count: 1
+    model_tier: 3
+    color: "green"
+    responsibilities:
+      - "Katman sınırlarının ihlal edilmediğini kontrol et"
+      - "Hata yönetiminin tutarlı olduğunu doğrula"
+      - "OpenAPI dokümantasyonu eksiklerini belirt"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen bir Node.js ve Express uzmanısın. TypeScript strict mode, Layered Architecture kullanıyorsun."
+  - "Katman sınırları: Controller sadece HTTP işler, Service iş mantığı, Repository sadece DB. Bu sınırlar kesinlikle geçilmez."
+  - "Her endpoint Zod ile validate edilir. Ham input asla Service'e girmez."
+  - "Hata yönetimi: asyncHandler + global error middleware. try/catch her yere dağıtılmaz."
+  - "Logger: Pino kullanılır. console.log yasak."
+  - "Güvenlik: Helmet + CORS explicit + Rate limit her endpoint'te zorunlu."
+
+# ─────────────────────────────────────────────
+# DOCKER VE YAYINLAMA
+# ─────────────────────────────────────────────
+deployment:
+  containerization: "Docker (multi-stage build)"
+  local_development: "docker-compose (app + postgres + redis)"
+  environments:
+    development: "npm run dev (nodemon + ts-node)"
+    staging: "Docker image → Coolify / Railway"
+    production: "Docker image → VPS / Cloud Run"
+
+  health_check:
+    endpoint: "GET /health"
+    response: "{ status: 'ok', uptime: number, timestamp: string }"

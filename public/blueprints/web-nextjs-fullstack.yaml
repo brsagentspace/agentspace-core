@@ -1,0 +1,274 @@
+# AgentSpace Blueprint — Next.js Tam Yığın Web Projesi
+# Miras: _base.yaml (tüm evrensel kurallar geçerli)
+
+id: "web-nextjs-fullstack"
+version: "1.0.0"
+name: "Next.js Tam Yığın Web Uygulaması"
+project_type: "web"
+inherits: "_base"
+
+description: |
+  Next.js 14+ App Router tabanlı, tam yığın web uygulaması şablonu.
+  Server Components, Prisma ORM ve TypeScript kullanılır.
+  SEO, performans ve erişilebilirlik birinci sınıf vatandaştır.
+
+tags: ["web", "nextjs", "typescript", "fullstack", "react", "prisma"]
+
+# ─────────────────────────────────────────────
+# MİMARİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Next.js App Router + Layered Architecture"
+  rendering_strategy:
+    default: "Server Components (RSC)"
+    interactive: "Client Components — yalnızca gerektiğinde 'use client'"
+    rule: "'use client' direktifi mümkün olan en alt bileşene itilir"
+
+  data_fetching:
+    server: "fetch() ile Next.js cache + revalidation"
+    client: "TanStack Query — sadece mutation ve real-time için"
+    orm: "Prisma"
+    rules:
+      - "Data fetching Server Component'larda yapılır — waterfall önlenir"
+      - "Parallel data fetching: Promise.all kullanılır"
+      - "Sensitive data asla Client Component'a aktarılmaz"
+
+  state_management:
+    server: "Server Components + URL state (nuqs)"
+    client: "Zustand — sadece gerçekten global olan state"
+    form: "React Hook Form + Zod validation"
+    rule: "useState ile yönetilebiliyorsa Zustand kullanma"
+
+  api_layer:
+    approach: "Next.js Route Handlers (app/api/)"
+    validation: "Zod schema — gelen istek zorunlu olarak validate edilir"
+    auth: "NextAuth.js v5 (Auth.js)"
+    rule: "Her Route Handler giriş validasyonu + hata yönetimi içerir"
+
+# ─────────────────────────────────────────────
+# KLASÖR YAPISI
+# ─────────────────────────────────────────────
+folder_structure:
+  root:
+    app/:
+      description: "Next.js App Router — sayfa ve layout dosyaları"
+      "(auth)/":
+        login/: "Login sayfası"
+        register/: "Kayıt sayfası"
+      "(dashboard)/":
+        layout.tsx: "Dashboard layout (auth guard içerir)"
+        "{sayfa}/": "Dashboard alt sayfaları"
+      api/:
+        "{endpoint}/":
+          route.ts: "Route Handler"
+      layout.tsx: "Root layout (font, metadata, providers)"
+      page.tsx: "Ana sayfa"
+      loading.tsx: "Suspense fallback"
+      error.tsx: "Error boundary"
+      not-found.tsx: "404 sayfası"
+
+    src/:
+      components/:
+        ui/: "Temel UI primitifleri (Button, Input, Badge...)"
+        layout/: "Header, Footer, Sidebar, Navigation"
+        forms/: "Form bileşenleri ve validation"
+        "{feature}/": "Feature'a özgü bileşenler"
+
+      lib/:
+        db.ts: "Prisma client singleton"
+        auth.ts: "NextAuth.js konfigürasyonu"
+        validations/: "Zod şemaları"
+        utils/: "Yardımcı fonksiyonlar"
+
+      hooks/: "Custom React hook'ları"
+      types/: "Global TypeScript tipleri"
+      stores/: "Zustand store'ları"
+      actions/: "Server Actions"
+
+    prisma/:
+      schema.prisma: "Veritabanı şeması"
+      migrations/: "Veritabanı migration'ları"
+      seed.ts: "Geliştirme veritabanı seed'i"
+
+    public/: "Statik dosyalar (görseller, fontlar)"
+
+# ─────────────────────────────────────────────
+# KOD STANDARTLARI
+# ─────────────────────────────────────────────
+code_standards:
+  language: "TypeScript (strict mode)"
+
+  server_components:
+    - "Data fetch, async işlem ve DB sorguları burada yapılır"
+    - "Props olarak sadece serializable değerler kabul edilir"
+    - "Event handler içermez"
+
+  client_components:
+    - "'use client' direktifi dosyanın en üstünde"
+    - "Minimum state ve minimum data alır — sunucudan pre-fetched data tercih edilir"
+    - "Suspense boundary ile sarılır"
+
+  api_routes:
+    - "Her route: giriş validasyonu (Zod) → işlem → standart response"
+    - "HTTP metodu kontrolü zorunlu (GET/POST/PUT/DELETE)"
+    - "Hata durumları uygun HTTP status kodu ile döner"
+    - "Rate limiting middleware eklenir"
+
+  database:
+    - "Her Prisma sorgusu try/catch ile sarılır"
+    - "N+1 sorgu problemi: Prisma include/select ile çözülür"
+    - "Transaction gerektiren işlemler prisma.$transaction kullanır"
+    - "Soft delete: deletedAt timestamp alanı ile yönetilir"
+
+  performance:
+    - "Görsel: next/image bileşeni zorunlu, alt attribute gerekli"
+    - "Font: next/font ile optimize yükleme"
+    - "Dynamic import: ağır bileşenler lazy load edilir"
+    - "Core Web Vitals: LCP < 2.5s, INP < 200ms, CLS < 0.1"
+    - "Bundle size: next build --analyze ile her sprint incelenir"
+
+  forbidden:
+    - "'use client' gereksiz yere eklenmez (RSC-first yaklaşım)"
+    - "Data fetching Client Component'larda yapılmaz"
+    - "Prisma client request başına oluşturulmaz — singleton kullanılır"
+    - "Çiğ SQL sorgusu (raw query) — Prisma ORM kullanılır"
+    - "API key'ler NEXT_PUBLIC_ prefix ile client'a sızamaz"
+
+# ─────────────────────────────────────────────
+# SEO VE META
+# ─────────────────────────────────────────────
+seo:
+  rules:
+    - "Her sayfa için generateMetadata() fonksiyonu tanımlanır"
+    - "Her sayfa benzersiz title ve description taşır"
+    - "OpenGraph ve Twitter Card meta tagları eklenir"
+    - "Canonical URL tanımlanır"
+    - "Sitemap: app/sitemap.ts otomatik üretir"
+    - "Robots: app/robots.ts ile kontrol edilir"
+    - "Yapısal veri (JSON-LD): ilgili sayfalara eklenir"
+
+# ─────────────────────────────────────────────
+# ERİŞİLEBİLİRLİK
+# ─────────────────────────────────────────────
+accessibility:
+  rules:
+    - "Semantic HTML: div soup yasak — section, article, nav, main kullanılır"
+    - "Her form elemanı label ile ilişkilendirilir"
+    - "Klavye navigasyonu test edilir (Tab order mantıklı)"
+    - "Focus trap: modal ve dropdown'larda zorunlu"
+    - "ARIA attribute'ları gerçekten gerektiğinde kullanılır — fazlası gürültü"
+    - "Renk bilgisi asla tek başına anlam taşımaz (icon/metin ile desteklenir)"
+
+# ─────────────────────────────────────────────
+# TEST STRATEJİSİ
+# ─────────────────────────────────────────────
+testing:
+  frameworks:
+    unit: "Vitest + React Testing Library"
+    e2e: "Playwright"
+    visual: "Chromatic (Phase 2)"
+
+  coverage_minimum: 70  # %
+  strategy:
+    unit: "Utility fonksiyonlar, Zod şemaları, custom hook'lar"
+    component: "Önemli UI bileşenleri render testi"
+    integration: "API Route Handler'ları (mock DB)"
+    e2e: "Kritik kullanıcı akışları (kayıt, giriş, satın alma)"
+
+# ─────────────────────────────────────────────
+# TASARIM SÜRECİ (ÖZGÜN — KOPYA DEĞİL)
+# ─────────────────────────────────────────────
+design_process:
+  critical_note: |
+    Bu şablonun referans projeleri SÜREÇ için kullanılır, 
+    görsel kopya için değil. Her web projesi özgün bir 
+    tasarım dili, renk paleti ve tipografi sistemi alır.
+
+  layout:
+    approach: "CSS Grid (sayfa layout) + Flexbox (bileşen içi)"
+    responsive: "Mobile-first breakpoints"
+    breakpoints:
+      sm: "640px"
+      md: "768px"
+      lg: "1024px"
+      xl: "1280px"
+      "2xl": "1536px"
+
+  motion:
+    library: "Framer Motion (isteğe bağlı)"
+    rules:
+      - "Sayfa geçişleri max 300ms"
+      - "Skeleton loading — herhangi bir data-fetch bekleme anında"
+      - "prefers-reduced-motion medya sorgusu kontrol edilir"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  architect:
+    count: 1
+    model_tier: 1
+    color: "blue"
+    responsibilities:
+      - "Next.js proje yapısını kur"
+      - "Prisma schema'yı tasarla (tablolar, ilişkiler)"
+      - "Auth stratejisini belirle (NextAuth provider'ları)"
+      - "API route yapısını planla"
+
+  fullstack_developer:
+    count: 2  # Paralel — biri frontend biri backend feature'ı
+    model_tier: 2
+    color: "yellow"
+    responsibilities:
+      - "Server ve Client Component'ları yaz"
+      - "Prisma migration'ları oluştur"
+      - "API Route Handler'ları implement et"
+      - "Server Action'ları yaz"
+
+  qa_engineer:
+    count: 1
+    model_tier: 2
+    color: "red"
+    responsibilities:
+      - "Vitest unit testlerini yaz"
+      - "Playwright E2E testlerini yaz"
+      - "Accessibility audit (axe-core)"
+      - "Core Web Vitals ölçümü"
+
+  seo_reviewer:
+    count: 1
+    model_tier: 3  # Gemini Flash — hızlı ve ucuz
+    color: "green"
+    responsibilities:
+      - "Her sayfanın metadata'sını kontrol et"
+      - "Semantic HTML yapısını denetle"
+      - "Lighthouse skorunu değerlendir"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen bir Next.js ve React uzmanısın. App Router ve Server Components kullanıyorsun."
+  - "RSC-first yaklaşım: 'use client' direktifi sadece zorunlu durumlarda, mümkün olan en alt bileşene eklenir."
+  - "Data fetching Server Component'larda yapılır. Client Component'larda TanStack Query sadece mutation ve real-time için."
+  - "Her API route Zod ile validate edilir. Ham input asla işleme girmez."
+  - "SEO: generateMetadata() her sayfada zorunlu."
+  - "Tasarım: referans projeyi kopyalama. Bu web sitesine özgün bir tasarım dili, renk ve tipografi sistemi üret."
+
+# ─────────────────────────────────────────────
+# YAYINLAMA
+# ─────────────────────────────────────────────
+deployment:
+  platform: "Vercel (birincil) / Coolify (self-hosted alternatif)"
+  environments:
+    development: "npm run dev (port 3000)"
+    preview: "Vercel Preview — her PR için otomatik"
+    production: "Vercel Production — main branch merge"
+
+  environment_variables:
+    required:
+      - "DATABASE_URL"
+      - "NEXTAUTH_SECRET"
+      - "NEXTAUTH_URL"
+    optional:
+      - "NEXT_PUBLIC_APP_URL"

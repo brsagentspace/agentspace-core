@@ -1,0 +1,352 @@
+# AgentSpace Blueprint — Evrensel Temel Kurallar
+# Tüm blueprint'ler bu dosyayı miras alır (_base.yaml)
+# Bu kurallar hangi proje tipinde olursa olsun geçerlidir.
+
+id: "_base"
+version: "1.0.0"
+description: "Tüm projelerde geçerli evrensel standartlar"
+
+# ─────────────────────────────────────────────
+# EVRENSEL KOD KALİTESİ KURALLARI
+# ─────────────────────────────────────────────
+code_quality:
+  principles:
+    - "Her fonksiyon tek bir şey yapar (Single Responsibility)"
+    - "Fonksiyon uzunluğu max 40 satır — aşarsa parçala"
+    - "Değişken isimleri ne olduğunu açıkça anlatır: 'userData' değil 'u'"
+    - "Kod yorumları 'ne' yaptığını değil 'neden' yaptığını açıklar"
+    - "Magic number yok — tüm sabitler named constant olarak tanımlanır"
+
+  forbidden:
+    - "console.log / print / debugger → üretim kodunda kesinlikle yasak"
+    - "TODO / FIXME → commit'e dahil edilemez, önce çözülür"
+    - "Hard-coded API key, şifre veya token → .env kullanılır"
+    - "any tipi (TypeScript) → explicit tip tanımı zorunlu"
+    - "Dead code → kullanılmayan fonksiyon veya import bırakılmaz"
+
+  naming_conventions:
+    variables: "camelCase"
+    constants: "UPPER_SNAKE_CASE"
+    classes: "PascalCase"
+    files: "kebab-case"
+    test_files: "{dosya_adı}.test.{uzantı}"
+
+# ─────────────────────────────────────────────
+# EVRENSEL TEST KURALLARI
+# ─────────────────────────────────────────────
+testing:
+  coverage_minimum: 70  # % — altına düşülemez
+  rules:
+    - "Her yeni feature → en az 1 unit test ile birlikte teslim edilir"
+    - "Her bug fix → o bug'ı yakalayan bir regression test eklenir"
+    - "Test dosyaları üretim kodunu taklit eden klasör yapısına sahiptir"
+    - "Mock'lar minimum tutulur — gerçekçi test data kullanılır"
+
+# ─────────────────────────────────────────────
+# EVRENSEL GÜVENLİK KURALLARI
+# ─────────────────────────────────────────────
+security:
+  rules:
+    - "Tüm kullanıcı girdisi sanitize edilir — asla ham string SQL/komuta gitmez"
+    - "Dependency'ler düzenli audit edilir (npm audit / pip audit)"
+    - "Secrets yalnızca .env veya secret manager'da tutulur"
+    - ".env dosyası asla git'e commit edilmez"
+    - "CORS ayarları explicit tanımlanır — wildcard (*) yasak"
+    - "API endpoint'leri rate limiting'e tabi tutulur"
+
+# ─────────────────────────────────────────────
+# EVRENSEL GİT VE VERSİYON KURALLARI
+# ─────────────────────────────────────────────
+version_control:
+  commit_format: "conventional commits"
+  # Zorunlu tip listesi:
+  # feat:     Yeni özellik
+  # fix:      Hata düzeltme
+  # refactor: Davranış değiştirmeyen kod düzenlemesi
+  # test:     Test ekleme veya düzenleme
+  # docs:     Yalnızca dokümantasyon değişikliği
+  # chore:    Build, config, bağımlılık güncellemeleri
+  # perf:     Performans iyileştirmesi
+  #
+  # Örnekler:
+  # feat(auth): JWT refresh token mekanizması eklendi
+  # fix(api): kullanıcı listesi endpoint 500 hatası düzeltildi
+  # refactor(db): repository katmanı yeniden düzenlendi
+  # test(auth): login unit testleri eklendi
+  # docs(readme): kurulum adımları güncellendi
+
+  commit_discipline:
+    critical_rule: |
+      Her commit atomik ve anlamlı olmalıdır.
+      "Her şeyi bir arada" commiti yoktur.
+      Bir commit bir iş yapar — ve o işi açıkça anlatır.
+
+    rules:
+      - "Her tamamlanan mantıksal iş birimi → hemen commit"
+      - "Commit mesajı imperative mood (emir kipi): 'eklendi' değil 'ekle'"
+      - "Commit mesajı max 72 karakter (başlık satırı)"
+      - "Birden fazla konu varsa ayrı commitler açılır — bir commit'e sıkıştırılmaz"
+      - "WIP (Work In Progress) commit'i main branch'e gitmez"
+      - "Her commit build'i bozmaz — commit sonrası proje çalışabilir durumda"
+      - "git add -A veya git add . ile körce staging yasak — değişiklikler gözden geçirilir"
+      - "Commit öncesi git diff okunur"
+
+    forbidden:
+      - "'fix', 'update', 'changes', 'misc' gibi belirsiz mesajlar"
+      - "Tek commit'e tüm projeyi doldurmak"
+      - "Debug kodu veya console.log içeren commit"
+      - "Gizli anahtar (API key, token) içeren commit — git history temiz kalır"
+      - ".env dosyasının commit edilmesi"
+
+    commit_size_guide:
+      small:  "1-50 satır — ideal atomik commit"
+      medium: "50-200 satır — kabul edilebilir"
+      large:  "200-400 satır — gerekçe gerektirir"
+      too_big: "400+ satır — parçalanmak zorunda"
+
+  branch_strategy:
+    main: "Production-ready, direkt push yasak"
+    develop: "Ana geliştirme branch'i"
+    feature: "feature/{kısa-açıklama}"
+    fix: "fix/{issue-numarası}-{kısa-açıklama}"
+
+  pr_rules:
+    - "Her PR max 400 satır değişiklik — daha büyükse parçalanır"
+    - "PR açılmadan önce kendi kendine review yapılır"
+    - "CI/CD geçmeden merge edilemez"
+
+# ─────────────────────────────────────────────
+# EVRENSEL DOKÜMANTASYON KURALLARI
+# ─────────────────────────────────────────────
+documentation:
+  required_files:
+    - "README.md → Projenin amacı, kurulum, çalıştırma talimatları"
+    - ".env.example → Tüm environment variable'lar örnek değerlerle"
+    - "CHANGELOG.md → Sürümler arası değişiklikler"
+
+  code_docs:
+    - "Public API'ler JSDoc / docstring ile belgelenir"
+    - "Karmaşık algoritmaların üstüne ne yaptığı ve neden tercih edildiği yazılır"
+
+# ─────────────────────────────────────────────
+# EVRENSEL KOD PROFESYONELLİĞİ KURALLARI
+# ─────────────────────────────────────────────
+professional_code:
+  comments:
+    rules:
+      - "Every file starts with a top-level JSDoc/docstring block: purpose, author, date"
+      - "Every exported function has a JSDoc comment: @param, @returns, @throws"
+      - "Complex logic blocks have an inline comment explaining WHY, not WHAT"
+      - "TODO comments are forbidden in committed code — resolve before committing"
+      - "No commented-out dead code — use git history instead"
+
+    format: |
+      /**
+       * @file ComponentName.tsx
+       * @description Brief description of what this file does.
+       * @module components/layout
+       */
+
+      /**
+       * Renders the top navigation bar with project and blueprint selectors.
+       *
+       * @param props - Component props
+       * @returns JSX element
+       */
+
+  naming:
+    typescript:
+      variables:         "camelCase"
+      constants:         "UPPER_SNAKE_CASE"
+      functions:         "camelCase"
+      react_components:  "PascalCase"
+      interfaces:        "PascalCase (no I prefix)"
+      type_aliases:      "PascalCase"
+      enums:             "PascalCase members"
+      css_classes:       "kebab-case (BEM preferred: block__element--modifier)"
+      files_components:  "PascalCase.tsx"
+      files_utilities:   "camelCase.ts"
+      files_constants:   "UPPER_SNAKE_CASE.ts or camelCase.ts"
+
+    python:
+      variables:         "snake_case"
+      constants:         "UPPER_SNAKE_CASE"
+      functions:         "snake_case"
+      classes:           "PascalCase"
+      modules:           "snake_case"
+      private:           "_leading_underscore"
+
+    rust:
+      variables:         "snake_case"
+      constants:         "UPPER_SNAKE_CASE"
+      functions:         "snake_case"
+      types_structs:     "PascalCase"
+      modules:           "snake_case"
+      macros:            "snake_case!"
+
+  formatting:
+    general:
+      - "Consistent indentation: 2 spaces (TS/JS/CSS), 4 spaces (Python/Rust)"
+      - "Max line length: 100 characters"
+      - "Trailing whitespace: none"
+      - "Final newline: always present"
+      - "Blank lines between logical blocks: exactly 1"
+
+    typescript:
+      formatter: "Prettier (config in .prettierrc)"
+      settings:
+        printWidth: 100
+        tabWidth: 2
+        singleQuote: true
+        trailingComma: "es5"
+        semi: true
+        arrowParens: "always"
+
+    python:
+      formatter: "Ruff format (Black-compatible)"
+      settings:
+        line_length: 100
+        indent_width: 4
+
+    rust:
+      formatter: "rustfmt"
+      settings:
+        max_width: 100
+        edition: "2021"
+
+  linting:
+    typescript: "ESLint with @typescript-eslint/recommended"
+    python:     "Ruff lint (replaces flake8 + isort)"
+    rust:       "cargo clippy -- -D warnings"
+    rule: "Zero lint warnings in committed code — warnings are treated as errors in CI"
+
+# ─────────────────────────────────────────────
+# EVRENSEL i18n KURALLARI
+# ─────────────────────────────────────────────
+i18n:
+  critical_rule: |
+    The codebase is written in English.
+    ALL user-facing strings are externalized into locale files from day one.
+    Hard-coded user-facing strings in component code are FORBIDDEN.
+    Adding a new language must require zero code changes — only a new locale file.
+
+  default_language: "en"
+  supported_languages:
+    - code: "en"
+      name: "English"
+      status: "default"
+    - code: "tr"
+      name: "Türkçe"
+      status: "planned"
+
+  stack:
+    library: "i18next + react-i18next"
+    file_format: "JSON"
+    namespace_strategy: "feature-based (common, layout, agents, blueprints...)"
+    interpolation: "{{variable}} syntax"
+    pluralization: "i18next built-in plural rules"
+
+  file_structure: |
+    src/
+      i18n/
+        index.ts              # i18next config and initialization
+        locales/
+          en/
+            common.json       # shared UI strings (buttons, status, errors)
+            layout.json       # top bar, status bar, panels
+            agents.json       # agent names, roles, statuses
+            blueprints.json   # blueprint names and descriptions
+          tr/
+            common.json
+            layout.json
+            agents.json
+            blueprints.json
+
+  key_naming:
+    rule: "Dot-notation, snake_case segments: namespace.section.key"
+    examples:
+      - "common.button.save"
+      - "common.error.network_timeout"
+      - "layout.top_bar.project_label"
+      - "layout.status_bar.agents_active"
+      - "agents.status.working"
+      - "agents.role.architect"
+      - "blueprints.mobile_react_native.name"
+
+  component_usage: |
+    // ✅ Correct
+    const { t } = useTranslation('layout');
+    return <span>{t('top_bar.project_label')}</span>;
+
+    // ❌ Forbidden
+    return <span>Project</span>;
+
+  rules:
+    - "Every new component uses useTranslation() hook — no raw strings"
+    - "Locale JSON keys use snake_case, nested by section"
+    - "Interpolation variables are documented in the JSON value as {{variable}}"
+    - "Missing translation keys must fail visibly in development"
+    - "The en/ locale is the source of truth — other locales are translations of it"
+    - "Locale files are sorted alphabetically by key to minimize merge conflicts"
+
+# ─────────────────────────────────────────────
+# EVRENSEL TASARIM SÜRECİ KURALLARI
+# (1-1 kopya değil — süreç standartları)
+# ─────────────────────────────────────────────
+design_process:
+  critical_rule: |
+    Bu kurallar SÜREÇ standartlarıdır.
+    Referans projenin rengi, fontu veya UI'si kopyalanmaz.
+    Her proje görsel olarak tamamen özgün olacak.
+    Kalite ve tutarlılık SÜREÇTEN gelir, kopyadan değil.
+
+  principles:
+    - "Tasarım kararları önceden (wireframe/mockup) onaylanır, kod sonra yazılır"
+    - "Her yeni UI bileşeni önce izole (Storybook / component playground) test edilir"
+    - "Erişilebilirlik (Accessibility) sonradan değil, baştan planlanır"
+    - "Responsive tasarım: mobile-first yaklaşım"
+    - "Kullanıcı testi olmadan tasarım 'bitti' sayılmaz"
+
+  typography:
+    rule: "Max 2 farklı font family, max 3 farklı font weight"
+    source: "Google Fonts — her proje için özgün seçim yapılır"
+
+  color:
+    rule: "Her yeni proje özgün bir renk paleti alır"
+    generation: "HSL tabanlı harmonious palette — referans projenin renkleri kopyalanmaz"
+    contrast_minimum: "4.5:1 (WCAG AA)"
+
+  spacing:
+    system: "8pt grid — tüm spacing değerleri 8'in katı"
+    values: [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128]  # px
+
+  touch_targets:
+    minimum: "44x44pt (iOS) / 48x48dp (Android)"
+
+# ─────────────────────────────────────────────
+# EVRENSEL AJAN DAVRANIŞI KURALLARI
+# ─────────────────────────────────────────────
+agent_behavior:
+  before_starting:
+    - "Blueprint'i tam oku, anlamadığın kural varsa sor — varsayımda bulunma"
+    - "Görev bağımlılıklarını kontrol et — bağımlı görev bitmeden başlama"
+    - "state.json dosyasını kontrol et — önceki çalışma yarıda mı kaldı?"
+
+  while_working:
+    - "Her 5 LLM çağrısında bir state.json güncelle"
+    - "Önemli bir karar aldığında 'DECISION:' prefix'i ile logla"
+    - "Bir engelle karşılaşırsan state.json'a 'blockers' ekle ve dur"
+    - "Bir dosyayı değiştirmeden önce mevcut içeriği oku"
+
+  after_finishing:
+    - "Üretilen dosyaları state.json'daki files_created'a ekle"
+    - "Alınan önemli kararları 'key_decisions' alanına kaydet"
+    - "Hatalar veya öğrenimler 'LESSON:' prefix'i ile logla"
+    - "Token kullanımını güncelle"
+
+  forbidden_actions:
+    - "Görev tanımının dışına çıkma — scope creep yasak"
+    - "Onaysız dosya silme veya taşıma"
+    - "API key veya şifreyi terminal output'una basma"
+    - "Referans projenin görsel tasarımını kopyalama"
+    - "Test yazmadan feature'ı 'tamamlandı' olarak işaretleme"
