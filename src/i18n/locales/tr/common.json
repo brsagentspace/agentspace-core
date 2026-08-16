@@ -1,0 +1,23 @@
+{
+  "button": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "confirm": "Onayla",
+    "close": "Kapat",
+    "add": "Ekle",
+    "edit": "Düzenle",
+    "retry": "Tekrar Dene"
+  },
+  "status": {
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu.",
+    "empty": "Veri bulunamadı.",
+    "success": "Tamamlandı."
+  },
+  "error": {
+    "network_timeout": "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.",
+    "unknown": "Beklenmeyen bir hata oluştu.",
+    "not_found": "Kaynak bulunamadı."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "top_bar": {
+    "logo_alt": "AgentSpace logo",
+    "project_label": "Project",
+    "project_placeholder": "—",
+    "blueprint_label": "Blueprint",
+    "blueprint_placeholder": "Select...",
+    "settings_tooltip": "Settings"
+  },
+  "status_bar": {
+    "agents_label": "Agents",
+    "agents_active": "{{count}} active",
+    "cpu_label": "CPU",
+    "ram_label": "RAM",
+    "token_budget_label": "Token Budget",
+    "token_remaining": "{{amount}}k left",
+    "cache_label": "Cache",
+    "version": "AgentSpace v{{version}}"
+  },
+  "rules_panel": {
+    "title": "Rules Panel",
+    "empty_message": "No blueprint selected.",
+    "empty_hint": "Pick a template from the top bar.",
+    "loading": "Loading blueprint...",
+    "loading_hint": "LlamaIndex RAG — active in Phase 5"
+  },
+  "office_canvas": {
+    "placeholder_label": "2D Office Simulation",
+    "placeholder_hint": "Phaser.js — active in Phase 2"
+  },
+  "terminal_panel": {
+    "add_tab_tooltip": "Open new terminal",
+    "placeholder_hint": "xterm.js — active in Phase 3"
+  }
+}

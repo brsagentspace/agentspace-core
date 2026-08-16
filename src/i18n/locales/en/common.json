@@ -1,0 +1,23 @@
+{
+  "button": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "add": "Add",
+    "edit": "Edit",
+    "retry": "Retry"
+  },
+  "status": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "empty": "No data found.",
+    "success": "Done."
+  },
+  "error": {
+    "network_timeout": "Request timed out. Please try again.",
+    "unknown": "An unexpected error occurred.",
+    "not_found": "Resource not found."
+  }
+}

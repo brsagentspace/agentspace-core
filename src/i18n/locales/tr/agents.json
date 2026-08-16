@@ -1,0 +1,35 @@
+{
+  "role": {
+    "architect": "Mimar",
+    "frontend": "Frontend Geliştirici",
+    "backend": "Backend Geliştirici",
+    "qa": "QA Mühendisi",
+    "researcher": "Araştırmacı",
+    "ml": "ML Mühendisi"
+  },
+  "status": {
+    "idle": "Boşta",
+    "walking": "Yürüyor",
+    "working": "Çalışıyor",
+    "thinking": "Düşünüyor",
+    "done": "Tamamlandı",
+    "blocked": "Engellendi"
+  },
+  "color": {
+    "blue": "Mavi",
+    "yellow": "Sarı",
+    "red": "Kırmızı",
+    "green": "Yeşil"
+  },
+  "model_tier": {
+    "1": "Seviye 1 — Mimar",
+    "2": "Seviye 2 — Geliştirici",
+    "3": "Seviye 3 — Gözden Geçiren"
+  },
+  "panel": {
+    "agents_title": "Ajanlar",
+    "agent_task_label": "Mevcut görev",
+    "agent_tokens_label": "Kullanılan token",
+    "agent_no_task": "Aktif görev yok"
+  }
+}

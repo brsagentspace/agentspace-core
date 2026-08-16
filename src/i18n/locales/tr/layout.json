@@ -1,0 +1,35 @@
+{
+  "top_bar": {
+    "logo_alt": "AgentSpace logosu",
+    "project_label": "Proje",
+    "project_placeholder": "—",
+    "blueprint_label": "Blueprint",
+    "blueprint_placeholder": "Seç...",
+    "settings_tooltip": "Ayarlar"
+  },
+  "status_bar": {
+    "agents_label": "Ajanlar",
+    "agents_active": "{{count}} aktif",
+    "cpu_label": "CPU",
+    "ram_label": "RAM",
+    "token_budget_label": "Token Bütçesi",
+    "token_remaining": "{{amount}}k kaldı",
+    "cache_label": "Önbellek",
+    "version": "AgentSpace v{{version}}"
+  },
+  "rules_panel": {
+    "title": "Kurallar Paneli",
+    "empty_message": "Blueprint seçilmedi.",
+    "empty_hint": "Üst bardan bir şablon seç.",
+    "loading": "Blueprint yükleniyor...",
+    "loading_hint": "LlamaIndex RAG — Faz 5'te aktif olacak"
+  },
+  "office_canvas": {
+    "placeholder_label": "2D Ofis Simülasyonu",
+    "placeholder_hint": "Phaser.js — Faz 2'de aktif olacak"
+  },
+  "terminal_panel": {
+    "add_tab_tooltip": "Yeni terminal aç",
+    "placeholder_hint": "xterm.js — Faz 3'te aktif olacak"
+  }
+}

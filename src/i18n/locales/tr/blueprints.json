@@ -1,0 +1,29 @@
+{
+  "mobile_react_native": {
+    "name": "Mobil (React Native)",
+    "description": "React Native + Expo ile iOS ve Android"
+  },
+  "web_nextjs_fullstack": {
+    "name": "Web (Next.js)",
+    "description": "Next.js App Router ile tam yığın web uygulaması"
+  },
+  "backend_node_microservice": {
+    "name": "Backend (Node.js)",
+    "description": "Katmanlı Mimari ile Node.js mikro servisi"
+  },
+  "backend_rust_service": {
+    "name": "Backend (Rust)",
+    "description": "Axum ile yüksek performanslı Rust servisi"
+  },
+  "ml_python_pipeline": {
+    "name": "ML Pipeline",
+    "description": "PyTorch ve MLflow ile Python ML/AI pipeline"
+  },
+  "panel": {
+    "active_rules_title": "Aktif Kurallar",
+    "section_architecture": "Mimari",
+    "section_code_standards": "Kod Standartları",
+    "section_forbidden": "Yasaklar",
+    "section_agents": "Ajan Rolleri"
+  }
+}

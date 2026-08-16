@@ -1,0 +1,29 @@
+{
+  "mobile_react_native": {
+    "name": "Mobile (React Native)",
+    "description": "iOS & Android with React Native + Expo"
+  },
+  "web_nextjs_fullstack": {
+    "name": "Web (Next.js)",
+    "description": "Full-stack web app with Next.js App Router"
+  },
+  "backend_node_microservice": {
+    "name": "Backend (Node.js)",
+    "description": "Node.js microservice with Layered Architecture"
+  },
+  "backend_rust_service": {
+    "name": "Backend (Rust)",
+    "description": "High-performance Rust service with Axum"
+  },
+  "ml_python_pipeline": {
+    "name": "ML Pipeline",
+    "description": "Python ML/AI pipeline with PyTorch & MLflow"
+  },
+  "panel": {
+    "active_rules_title": "Active Rules",
+    "section_architecture": "Architecture",
+    "section_code_standards": "Code Standards",
+    "section_forbidden": "Forbidden",
+    "section_agents": "Agent Roles"
+  }
+}

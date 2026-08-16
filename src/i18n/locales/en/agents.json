@@ -1,0 +1,35 @@
+{
+  "role": {
+    "architect": "Architect",
+    "frontend": "Frontend Dev",
+    "backend": "Backend Dev",
+    "qa": "QA Engineer",
+    "researcher": "Researcher",
+    "ml": "ML Engineer"
+  },
+  "status": {
+    "idle": "Idle",
+    "walking": "Walking",
+    "working": "Working",
+    "thinking": "Thinking",
+    "done": "Done",
+    "blocked": "Blocked"
+  },
+  "color": {
+    "blue": "Blue",
+    "yellow": "Yellow",
+    "red": "Red",
+    "green": "Green"
+  },
+  "model_tier": {
+    "1": "Tier 1 — Architect",
+    "2": "Tier 2 — Developer",
+    "3": "Tier 3 — Reviewer"
+  },
+  "panel": {
+    "agents_title": "Agents",
+    "agent_task_label": "Current task",
+    "agent_tokens_label": "Tokens used",
+    "agent_no_task": "No active task"
+  }
+}
