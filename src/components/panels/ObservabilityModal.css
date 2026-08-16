@@ -1,0 +1,263 @@
+/**
+ * @file ObservabilityModal.css
+ * @description Layout and visualization styles for the Langfuse Observability Modal.
+ */
+
+.telemetry-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+
+.telemetry-modal {
+  width: 100%;
+  max-width: 820px;
+  max-height: 85vh;
+  background: #0d0d12;
+  border: 1px solid #20202e;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.telemetry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #0a0a0e;
+  border-bottom: 1px solid #1c1c28;
+}
+
+.telemetry-header__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.telemetry-header__title h3 {
+  margin: 0;
+  font-size: 13px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  color: #e2e2e8;
+}
+
+.telemetry-icon--accent {
+  color: #3b82f6;
+}
+
+.telemetry-badge {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #3fb950;
+  background: #3fb95015;
+  border: 1px solid #3fb95030;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.telemetry-close-btn {
+  background: transparent;
+  border: none;
+  color: #6a6a7e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.telemetry-close-btn:hover {
+  background: #181824;
+  color: #ffffff;
+}
+
+/* Body */
+.telemetry-body {
+  padding: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* KPI Grid */
+.telemetry-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.telemetry-kpi-card {
+  background: #12121a;
+  border: 1px solid #1e1e2c;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.telemetry-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.telemetry-kpi-label {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #7a7a8e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.telemetry-kpi-icon {
+  color: #6a6a7e;
+}
+
+.telemetry-kpi-icon--green { color: #3fb950; }
+.telemetry-kpi-icon--warn  { color: #f59e0b; }
+.telemetry-kpi-icon--blue  { color: #3b82f6; }
+
+.telemetry-kpi-value {
+  font-size: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #e2e2e8;
+}
+
+.telemetry-kpi-sub {
+  font-size: 10px;
+  color: #5a5a6e;
+}
+
+/* Sections */
+.telemetry-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #111118;
+  border: 1px solid #1c1c28;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.telemetry-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #8a8a9e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Tier Bars */
+.telemetry-tier-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.telemetry-tier-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.telemetry-tier-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #a0a0b0;
+}
+
+.telemetry-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #181824;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.telemetry-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.telemetry-bar-fill--t1 { background: #3b82f6; }
+.telemetry-bar-fill--t2 { background: #f59e0b; }
+.telemetry-bar-fill--t3 { background: #3fb950; }
+
+/* Traces Table */
+.telemetry-table-container {
+  overflow-x: auto;
+}
+
+.telemetry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-align: left;
+}
+
+.telemetry-table th {
+  padding: 8px 10px;
+  color: #5a5a6e;
+  border-bottom: 1px solid #1c1c26;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.telemetry-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #161620;
+  color: #c4c4d4;
+}
+
+.telemetry-cell--name {
+  color: #e2e2e8;
+  font-weight: 500;
+}
+
+.telemetry-cell--cost {
+  color: #3fb950;
+  font-weight: 600;
+}
+
+.telemetry-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #181824;
+  border: 1px solid #222230;
+  border-radius: 3px;
+  color: #93c5fd;
+}
+
+.telemetry-status-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #3fb95015;
+  color: #3fb950;
+  text-transform: uppercase;
+}

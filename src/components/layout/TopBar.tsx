@@ -3,14 +3,14 @@
  * @description Top navigation bar for the AgentSpace application.
  *
  * Contains application logo, active project name, blueprint selector dropdown,
- * multi-agent workflow trigger, and settings controls.
+ * multi-agent workflow trigger, Langfuse telemetry launcher, and settings controls.
  *
  * @module components/layout
  */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Loader2, Settings } from 'lucide-react';
+import { Play, Loader2, Settings, Activity } from 'lucide-react';
 import { useAgentSpaceStore } from '../../store';
 import { agentOrchestrator } from '../../services/agentOrchestrator';
 import './TopBar.css';
@@ -23,6 +23,10 @@ interface BlueprintOption {
   labelKey: string;
 }
 
+interface TopBarProps {
+  onOpenTelemetry?: () => void;
+}
+
 /** All available blueprint options. */
 const BLUEPRINT_OPTIONS: BlueprintOption[] = [
   { id: 'mobile-react-native',       labelKey: 'mobile_react_native.name' },
@@ -33,11 +37,11 @@ const BLUEPRINT_OPTIONS: BlueprintOption[] = [
 ];
 
 /**
- * Renders the top navigation bar with multi-agent execution triggers.
+ * Renders the top navigation bar with multi-agent execution triggers and telemetry.
  *
  * @returns Header JSX element
  */
-export function TopBar() {
+export function TopBar({ onOpenTelemetry }: TopBarProps) {
   const { t } = useTranslation('layout');
   const { t: tBlueprints } = useTranslation('blueprints');
 
@@ -125,6 +129,17 @@ export function TopBar() {
       </button>
 
       <div className="top-bar__divider" aria-hidden="true" />
+
+      {/* ── Telemetry Dashboard Button ──────────────────── */}
+      <button
+        className="top-bar__btn"
+        type="button"
+        onClick={onOpenTelemetry}
+        title="Langfuse Telemetry & Cost Dashboard"
+        aria-label="Open Telemetry Dashboard"
+      >
+        <Activity size={14} aria-hidden="true" />
+      </button>
 
       {/* ── Settings button ─────────────────────────────── */}
       <button
