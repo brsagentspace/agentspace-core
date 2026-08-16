@@ -1,44 +1,84 @@
 /**
  * @file OfficeCanvas.tsx
- * @description 2D office simulation canvas container.
+ * @description 2D office simulation canvas mounted with Phaser 3.
  *
- * This component is a Phase 1 placeholder. In Phase 2, it will mount
- * a Phaser.js game instance inside this container and render the
- * isometric office environment with animated robot agents.
- *
- * The canvas element will be appended to the ref div by Phaser's
- * renderer — React does not manage the canvas DOM node directly.
+ * Mounts the Phaser.Game instance into a DOM container and keeps the
+ * game scene synchronized with the Zustand store's active agents in real time.
  *
  * @module components/phaser
  */
 
+import { useEffect, useRef } from 'react';
+import Phaser from 'phaser';
 import { useTranslation } from 'react-i18next';
+import { useAgentSpaceStore } from '../../store';
+import { OfficeScene } from './scenes/OfficeScene';
 import './OfficeCanvas.css';
 
 /**
- * Renders the office canvas container.
+ * Renders the Phaser 2D Office canvas container.
  *
- * Phase 1: Displays a placeholder with a subtle grid background.
- * Phase 2: Will mount a Phaser.js WebGL/Canvas context here.
- *
- * @returns The canvas wrapper div element.
+ * @returns The canvas wrapper container.
  */
 export function OfficeCanvas() {
   const { t } = useTranslation('layout');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<Phaser.Game | null>(null);
+  const sceneRef = useRef<OfficeScene | null>(null);
+
+  const agents = useAgentSpaceStore((s) => s.agents);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Create scene instance
+    const scene = new OfficeScene();
+    sceneRef.current = scene;
+
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      parent: containerRef.current,
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#09090d',
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
+      render: {
+        pixelArt: false,
+        antialias: true,
+      },
+      scene: [scene],
+    };
+
+    const game = new Phaser.Game(config);
+    gameRef.current = game;
+
+    scene.events.once('scene-ready', () => {
+      scene.syncAgents(agents);
+    });
+
+    return () => {
+      game.destroy(true);
+      gameRef.current = null;
+      sceneRef.current = null;
+    };
+  }, []);
+
+  // Sync agents whenever store updates
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.syncAgents(agents);
+    }
+  }, [agents]);
 
   return (
-    <div className="office-canvas" role="region" aria-label={t('office_canvas.placeholder_label')}>
-      <div className="office-canvas__placeholder">
-        {/* Subtle dot-grid background */}
-        <div className="office-canvas__grid" aria-hidden="true" />
-
-        {/* Phase 1 status message */}
-        <div className="office-canvas__message" role="status">
-          <span className="office-canvas__icon" aria-hidden="true">⬡</span>
-          <p>{t('office_canvas.placeholder_label')}</p>
-          <p className="office-canvas__sub">{t('office_canvas.placeholder_hint')}</p>
-        </div>
-      </div>
-    </div>
+    <div
+      ref={containerRef}
+      className="office-canvas"
+      role="region"
+      aria-label={t('office_canvas.placeholder_label')}
+    />
   );
 }
