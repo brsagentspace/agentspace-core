@@ -2,28 +2,28 @@
  * @file TopBar.tsx
  * @description Top navigation bar for the AgentSpace application.
  *
- * Contains the application logo, active project name display,
- * blueprint selector dropdown, and settings button.
- * Blueprint selection is persisted in the Zustand global store.
+ * Contains application logo, active project name, blueprint selector dropdown,
+ * multi-agent workflow trigger, and settings controls.
  *
  * @module components/layout
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Play, Loader2, Settings } from 'lucide-react';
 import { useAgentSpaceStore } from '../../store';
+import { agentOrchestrator } from '../../services/agentOrchestrator';
 import './TopBar.css';
 
 /**
  * Blueprint option descriptor used to populate the selector dropdown.
- * The `id` must match the YAML filename in agentspace-skills/blueprints/.
  */
 interface BlueprintOption {
   id: string;
-  /** i18n key path within the `blueprints` namespace, e.g. "mobile_react_native.name" */
   labelKey: string;
 }
 
-/** All available blueprint options. Add new blueprints here when created. */
+/** All available blueprint options. */
 const BLUEPRINT_OPTIONS: BlueprintOption[] = [
   { id: 'mobile-react-native',       labelKey: 'mobile_react_native.name' },
   { id: 'web-nextjs-fullstack',       labelKey: 'web_nextjs_fullstack.name' },
@@ -33,10 +33,9 @@ const BLUEPRINT_OPTIONS: BlueprintOption[] = [
 ];
 
 /**
- * Renders the top navigation bar.
+ * Renders the top navigation bar with multi-agent execution triggers.
  *
- * @returns The header element containing logo, project info, blueprint selector
- *          and settings button.
+ * @returns Header JSX element
  */
 export function TopBar() {
   const { t } = useTranslation('layout');
@@ -46,14 +45,20 @@ export function TopBar() {
   const setActiveBlueprint = useAgentSpaceStore((s) => s.setActiveBlueprint);
   const activeProject = useAgentSpaceStore((s) => s.activeProject);
 
-  /**
-   * Handles blueprint selector change events.
-   * An empty string value clears the active blueprint.
-   *
-   * @param event - The native select change event.
-   */
+  const [isExecuting, setIsExecuting] = useState(false);
+
   const handleBlueprintChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setActiveBlueprint(event.target.value || null);
+  };
+
+  const handleTriggerCycle = async () => {
+    if (isExecuting) return;
+    setIsExecuting(true);
+    try {
+      await agentOrchestrator.runWorkflowCycle('Implement Secure Authentication Flow & Rate Limiting');
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   return (
@@ -98,6 +103,29 @@ export function TopBar() {
 
       <div className="top-bar__spacer" />
 
+      {/* ── Run Workflow Button ─────────────────────────── */}
+      <button
+        className="top-bar__run-btn"
+        type="button"
+        onClick={handleTriggerCycle}
+        disabled={isExecuting}
+        title="Trigger Multi-Agent Iteration"
+      >
+        {isExecuting ? (
+          <>
+            <Loader2 size={12} className="top-bar__spin" aria-hidden="true" />
+            <span>Ajanlar Çalışıyor...</span>
+          </>
+        ) : (
+          <>
+            <Play size={12} fill="currentColor" aria-hidden="true" />
+            <span>Workflow Başlat</span>
+          </>
+        )}
+      </button>
+
+      <div className="top-bar__divider" aria-hidden="true" />
+
       {/* ── Settings button ─────────────────────────────── */}
       <button
         className="top-bar__btn"
@@ -105,18 +133,7 @@ export function TopBar() {
         title={t('top_bar.settings_tooltip')}
         aria-label={t('top_bar.settings_tooltip')}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
-        </svg>
+        <Settings size={14} aria-hidden="true" />
       </button>
     </header>
   );
