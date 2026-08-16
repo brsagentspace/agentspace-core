@@ -15,9 +15,10 @@ import ReactDOM from 'react-dom/client';
 import './i18n/index';
 
 import App from './App';
+import { ErrorBoundary } from './ErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
+  <ErrorBoundary>
     <App />
-  </React.StrictMode>
+  </ErrorBoundary>
 );

@@ -55,11 +55,13 @@ export function OfficeCanvas() {
     const game = new Phaser.Game(config);
     gameRef.current = game;
 
-    scene.events.once('scene-ready', () => {
-      scene.syncAgents(agents);
-    });
+    const onSceneReady = () => {
+      scene.syncAgents(useAgentSpaceStore.getState().agents);
+    };
+    window.addEventListener('phaser-scene-ready', onSceneReady);
 
     return () => {
+      window.removeEventListener('phaser-scene-ready', onSceneReady);
       game.destroy(true);
       gameRef.current = null;
       sceneRef.current = null;

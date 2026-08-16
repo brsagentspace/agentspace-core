@@ -2,9 +2,8 @@
  * @file OfficeScene.ts
  * @description Phaser 3 scene for the 2D office simulation.
  *
- * Handles isometric/top-down office tile rendering, desk placements,
- * robot agent sprite lifecycle (idle, walking, thinking, working),
- * speech/thought bubbles, and real-time synchronization with the Zustand store.
+ * Implements a detailed RPG tilemap level design with 4 separate rooms,
+ * proper walls, decorations (props), detailed workstations, and agents.
  *
  * @module components/phaser/scenes
  */
@@ -12,9 +11,6 @@
 import Phaser from 'phaser';
 import type { Agent, AgentStatus } from '../../../types';
 
-/**
- * Visual configuration for the office layout.
- */
 interface DeskSlot {
   id: string;
   x: number;
@@ -23,9 +19,6 @@ interface DeskSlot {
   assignedAgentId: string | null;
 }
 
-/**
- * Representation of an active robot sprite with its UI elements (label, thought bubble, status dot).
- */
 interface AgentVisual {
   sprite: Phaser.GameObjects.Sprite;
   shadow: Phaser.GameObjects.Ellipse;
@@ -37,149 +30,130 @@ interface AgentVisual {
   targetY: number;
 }
 
+const TILE_SIZE = 32; // Scaled from 16x16 to 32x32
+
 export class OfficeScene extends Phaser.Scene {
-  /** Map of agent ID to active visual game objects */
   private agentVisuals: Map<string, AgentVisual> = new Map();
 
-  /** Predefined office desk stations */
+  // Positions mapped to the center of 4 rooms
   private deskSlots: DeskSlot[] = [
-    { id: 'desk_1', x: 220, y: 180, label: 'Station Alpha (Architect)', assignedAgentId: null },
-    { id: 'desk_2', x: 440, y: 180, label: 'Station Beta (Frontend)', assignedAgentId: null },
-    { id: 'desk_3', x: 220, y: 360, label: 'Station Gamma (Backend)', assignedAgentId: null },
-    { id: 'desk_4', x: 440, y: 360, label: 'Station Delta (QA)', assignedAgentId: null },
-    { id: 'desk_5', x: 660, y: 270, label: 'Station Epsilon (ML / Data)', assignedAgentId: null },
+    { id: 'desk_1', x: 150, y: 150, label: 'Architect (Tier 1)', assignedAgentId: null },
+    { id: 'desk_2', x: 450, y: 150, label: 'Frontend-Bot', assignedAgentId: null },
+    { id: 'desk_3', x: 150, y: 350, label: 'Backend-Bot', assignedAgentId: null },
+    { id: 'desk_4', x: 450, y: 350, label: 'QA-Service', assignedAgentId: null },
+    { id: 'desk_5', x: 300, y: 250, label: 'Database-Agent', assignedAgentId: null },
   ];
 
-  /** Grid and environment graphics container */
   private officeContainer!: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: 'OfficeScene' });
   }
 
-  /**
-   * Preload static assets including robot textures and tilemap.
-   */
   preload(): void {
-    // Top-down robot sprites
     this.load.image('robot_blue', '/assets/robots/robot_blue.png');
     this.load.image('robot_red', '/assets/robots/robot_red.png');
     this.load.image('robot_yellow', '/assets/robots/robot_yellow.png');
     this.load.image('robot_green', '/assets/robots/robot_green.png');
 
-    // Tiles
-    this.load.image('tiles_packed', '/assets/tiles/tilemap_packed.png');
+    this.load.spritesheet('urban_tiles', '/assets/tiles/tilemap_packed.png', {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
   }
 
-  /**
-   * Initialize scene objects, office environment, and lighting/grid effects.
-   */
   create(): void {
-    this.cameras.main.setBackgroundColor('#09090d');
-
+    this.cameras.main.setBackgroundColor('#000000');
     this.officeContainer = this.add.container(0, 0);
 
-    this.renderOfficeEnvironment();
+    this.renderLevel();
     this.renderDesks();
 
-    // Pulse animation for thinking state
+    // Minor breathing effect for the entire level
     this.tweens.add({
       targets: this.officeContainer,
-      alpha: { from: 0.98, to: 1 },
-      duration: 3000,
+      alpha: { from: 0.96, to: 1 },
+      duration: 4000,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
 
-    // Notify ready to external subscribers if any
-    this.events.emit('scene-ready');
+    window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
   }
 
   /**
-   * Renders the stylized floor tiles and room boundaries.
+   * Generates the 2D Tilemap (Rooms, Walls, Floors)
    */
-  private renderOfficeEnvironment(): void {
+  private renderLevel(): void {
     const width = this.scale.width;
     const height = this.scale.height;
+    const mapCols = Math.ceil(width / TILE_SIZE);
+    const mapRows = Math.ceil(height / TILE_SIZE);
 
-    // Floor background with dark tech styling
-    const floor = this.add.graphics();
-    floor.fillStyle(0x0e0e15, 1);
-    floor.fillRoundedRect(40, 40, width - 80, height - 80, 16);
+    for (let c = 0; c < mapCols; c++) {
+      for (let r = 0; r < mapRows; r++) {
+        let isWall = false;
 
-    // Floor border outline
-    floor.lineStyle(2, 0x1f1f2e, 1);
-    floor.strokeRoundedRect(40, 40, width - 80, height - 80, 16);
+        // Check walls (borders only for a clean open-space office)
+        if (c === 0 || c === mapCols - 1 || r === 0 || r === mapRows - 1) {
+          isWall = true;
+        }
 
-    // Tech grid dots across office area
-    floor.fillStyle(0x28283d, 0.4);
-    for (let x = 70; x < width - 70; x += 32) {
-      for (let y = 70; y < height - 70; y += 32) {
-        floor.fillCircle(x, y, 1.5);
+        // 14 = clean floor tile, 0 = wall
+        const tileId = isWall ? 0 : 14; 
+
+        const tile = this.add.image(c * TILE_SIZE, r * TILE_SIZE, 'urban_tiles', tileId).setOrigin(0, 0);
+        tile.setDisplaySize(TILE_SIZE, TILE_SIZE);
+        
+        // Depth sorting: floors at bottom, walls slightly higher
+        tile.setDepth(isWall ? 1 : 0);
+
+        // Cleaned up random props logic to make it look professional
+        if (isWall && c > 0 && c < mapCols - 1 && r > 0 && r < mapRows - 1) {
+          if (Math.random() > 0.9) {
+            const propId = 200; // Single clean window tile
+            const prop = this.add.image(c * TILE_SIZE, r * TILE_SIZE, 'urban_tiles', propId).setOrigin(0, 0);
+            prop.setDisplaySize(TILE_SIZE, TILE_SIZE);
+            prop.setDepth(2);
+          }
+        }
       }
     }
-
-    // Zone indicators / Division line
-    const dividers = this.add.graphics();
-    dividers.lineStyle(1, 0x222233, 0.8);
-    dividers.lineBetween(width * 0.58, 60, width * 0.58, height - 60);
-
-    // Zone Labels
-    this.add.text(60, 56, 'AGENTS WORKSPACE', {
-      fontFamily: 'JetBrains Mono, monospace',
-      fontSize: '10px',
-      color: '#3b82f6',
-      letterSpacing: 2,
-    });
-
-    this.add.text(width * 0.61, 56, 'COLLABORATION HUB', {
-      fontFamily: 'JetBrains Mono, monospace',
-      fontSize: '10px',
-      color: '#4a4a5e',
-      letterSpacing: 2,
-    });
   }
 
   /**
-   * Renders desk furniture and monitor screens.
+   * Renders the workstations (Desks, Monitors) inside the rooms.
    */
   private renderDesks(): void {
     this.deskSlots.forEach((desk) => {
-      const g = this.add.graphics();
+      // Desk Base
+      const deskTile = this.add.image(desk.x, desk.y, 'urban_tiles', 133);
+      deskTile.setScale(2.5); 
+      deskTile.setDepth(10); // Above floor
 
-      // Desk wood/metal surface
-      g.fillStyle(0x181824, 1);
-      g.fillRoundedRect(desk.x - 45, desk.y - 30, 90, 60, 8);
-      g.lineStyle(1.5, 0x2e2e42, 1);
-      g.strokeRoundedRect(desk.x - 45, desk.y - 30, 90, 60, 8);
+      // Monitor
+      const monitorTile = this.add.image(desk.x, desk.y - 12, 'urban_tiles', 160);
+      monitorTile.setScale(2.2);
+      monitorTile.setDepth(11);
 
-      // Computer Monitor Base & Screen
-      g.fillStyle(0x0a0a0f, 1);
-      g.fillRoundedRect(desk.x - 22, desk.y - 22, 44, 14, 3);
-      g.lineStyle(1, 0x3b82f6, 0.8);
-      g.strokeRoundedRect(desk.x - 22, desk.y - 22, 44, 14, 3);
-
-      // Keyboard & Mouse
-      g.fillStyle(0x222230, 1);
-      g.fillRoundedRect(desk.x - 16, desk.y - 2, 32, 10, 2);
-      g.fillRoundedRect(desk.x + 22, desk.y - 1, 8, 12, 3);
-
-      // Desk label
-      this.add.text(desk.x, desk.y + 38, desk.label.split(' ')[1] || 'Desk', {
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '9px',
-        color: '#55556a',
-      }).setOrigin(0.5);
+      // Keyboard (Guessing ID 162 or similar)
+      const kbTile = this.add.image(desk.x, desk.y + 6, 'urban_tiles', 162);
+      kbTile.setScale(1.5);
+      kbTile.setDepth(11);
+      
+      // Random plant (ID 210) next to desk
+      if (Math.random() > 0.5) {
+        const plant = this.add.image(desk.x + 32, desk.y, 'urban_tiles', 210);
+        plant.setScale(2);
+        plant.setDepth(11);
+      }
     });
   }
 
-  /**
-   * Syncs agents from the Zustand store into the Phaser world.
-   *
-   * @param agents - Current list of active agents
-   */
   public syncAgents(agents: Agent[]): void {
+    if (!this.sys || !this.add) return;
+
     const currentIds = new Set(agents.map((a) => a.id));
 
     // Remove deleted agents
@@ -198,7 +172,7 @@ export class OfficeScene extends Phaser.Scene {
     agents.forEach((agent, index) => {
       const assignedDesk = this.deskSlots[index % this.deskSlots.length];
       const targetX = assignedDesk.x;
-      const targetY = assignedDesk.y + 10;
+      const targetY = assignedDesk.y - 16; // Agent sits BEHIND the desk
 
       if (!this.agentVisuals.has(agent.id)) {
         this.createAgentVisual(agent, targetX, targetY);
@@ -208,83 +182,74 @@ export class OfficeScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Instantiates the graphical representation of a robot agent.
-   */
   private createAgentVisual(agent: Agent, targetX: number, targetY: number): void {
     const textureKey = `robot_${agent.color || 'blue'}`;
 
     // Soft drop shadow
-    const shadow = this.add.ellipse(targetX, targetY + 24, 38, 16, 0x000000, 0.4);
+    const shadow = this.add.ellipse(targetX, targetY + 24, 28, 12, 0x000000, 0.6);
+    shadow.setDepth(12);
 
-    // Glow effect
-    const glow = this.add.circle(targetX, targetY, 28, this.getColorHex(agent.color), 0.15);
+    const glow = this.add.circle(targetX, targetY, 24, this.getColorHex(agent.color), 0.15);
+    glow.setDepth(12);
 
-    // Robot Sprite (scaled down from original 148x154 to 48x50)
+    // Robot Sprite
     const sprite = this.add.sprite(targetX, targetY, textureKey);
-    sprite.setDisplaySize(48, 50);
+    sprite.setDisplaySize(38, 40); // Slightly smaller to fit the desk proportion
     sprite.setInteractive({ useHandCursor: true });
+    sprite.setDepth(13);
 
-    // Agent Name Badge
-    const label = this.add.text(targetX, targetY - 36, agent.name, {
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontSize: '10px',
-      color: '#e2e2e8',
-      backgroundColor: '#12121ae6',
-      padding: { x: 6, y: 2 },
+    // Agent Name Badge (Muratify Style: Neon green on black)
+    const label = this.add.text(targetX, targetY + 32, agent.name.toUpperCase(), {
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '9px',
+      color: '#10b981', // Neon Green
+      backgroundColor: '#000000',
+      padding: { x: 4, y: 2 },
     }).setOrigin(0.5);
+    label.setDepth(14);
+    
+    // Tiny white border for the label to make it pop
+    label.setStroke('#111', 1);
 
-    // Status / Thought Bubble container
-    const statusBubble = this.add.container(targetX + 22, targetY - 30);
+    // Status Bubble
+    const statusBubble = this.add.container(targetX + 18, targetY - 24);
+    statusBubble.setDepth(15);
+    
     const bubbleBg = this.add.graphics();
-    bubbleBg.fillStyle(0x1e1e2d, 0.95);
-    bubbleBg.fillRoundedRect(-16, -12, 32, 20, 6);
-    bubbleBg.lineStyle(1, 0x3b82f6, 0.8);
-    bubbleBg.strokeRoundedRect(-16, -12, 32, 20, 6);
+    bubbleBg.fillStyle(0xffffff, 1);
+    bubbleBg.fillRoundedRect(-12, -10, 24, 20, 4);
+    bubbleBg.lineStyle(1, 0x000000, 1);
+    bubbleBg.strokeRoundedRect(-12, -10, 24, 20, 4);
 
-    const bubbleText = this.add.text(0, -2, this.getStatusIcon(agent.status), {
+    const bubbleText = this.add.text(0, 0, this.getStatusIcon(agent.status), {
+      fontFamily: 'system-ui, sans-serif',
       fontSize: '11px',
-      color: '#ffffff',
+      color: '#000000',
+      fontWeight: 'bold'
     }).setOrigin(0.5);
 
     statusBubble.add([bubbleBg, bubbleText]);
 
-    // Floating idle breathing animation
     this.tweens.add({
       targets: [sprite, glow],
-      y: targetY - 3,
-      duration: 1200 + Math.random() * 400,
+      y: targetY - 2,
+      duration: 1500 + Math.random() * 500,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
 
-    this.agentVisuals.set(agent.id, {
-      sprite,
-      shadow,
-      label,
-      statusBubble,
-      bubbleText,
-      glow,
-      targetX,
-      targetY,
-    });
+    this.agentVisuals.set(agent.id, { sprite, shadow, label, statusBubble, bubbleText, glow, targetX, targetY });
   }
 
-  /**
-   * Updates an existing agent's visuals and status indicator.
-   */
   private updateAgentVisual(agent: Agent, targetX: number, targetY: number): void {
     const visual = this.agentVisuals.get(agent.id);
     if (!visual) return;
 
     visual.bubbleText.setText(this.getStatusIcon(agent.status));
-    visual.label.setText(agent.name);
-
-    // Update glow color if role/color altered
+    visual.label.setText(agent.name.toUpperCase());
     visual.glow.setFillStyle(this.getColorHex(agent.color), 0.15);
 
-    // If position changed, tween to new spot
     if (visual.targetX !== targetX || visual.targetY !== targetY) {
       visual.targetX = targetX;
       visual.targetY = targetY;
@@ -299,41 +264,25 @@ export class OfficeScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Returns a status icon / emote string based on agent status.
-   */
   private getStatusIcon(status: AgentStatus): string {
     switch (status) {
-      case 'thinking':
-        return '⋯';
-      case 'working':
-        return '⚡';
-      case 'blocked':
-        return '!';
-      case 'done':
-        return '✓';
-      case 'walking':
-        return '➤';
+      case 'thinking': return '...';
+      case 'working': return '⚡';
+      case 'blocked': return '!';
+      case 'done': return '✓';
+      case 'walking': return '➤';
       case 'idle':
-      default:
-        return 'z';
+      default: return 'z';
     }
   }
 
-  /**
-   * Converts agent color name to hex integer.
-   */
   private getColorHex(color: string): number {
     switch (color) {
-      case 'yellow':
-        return 0xf59e0b;
-      case 'red':
-        return 0xef4444;
-      case 'green':
-        return 0x3fb950;
+      case 'yellow': return 0xf59e0b;
+      case 'red': return 0xef4444;
+      case 'green': return 0x3fb950;
       case 'blue':
-      default:
-        return 0x3b82f6;
+      default: return 0x3b82f6;
     }
   }
 }

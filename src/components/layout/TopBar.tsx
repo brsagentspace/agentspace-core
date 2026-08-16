@@ -1,155 +1,52 @@
-/**
- * @file TopBar.tsx
- * @description Top navigation bar for the AgentSpace application.
- *
- * Contains application logo, active project name, blueprint selector dropdown,
- * multi-agent workflow trigger, Langfuse telemetry launcher, and settings controls.
- *
- * @module components/layout
- */
-
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Play, Loader2, Settings, Activity } from 'lucide-react';
-import { useAgentSpaceStore } from '../../store';
-import { agentOrchestrator } from '../../services/agentOrchestrator';
-import './TopBar.css';
-
-/**
- * Blueprint option descriptor used to populate the selector dropdown.
- */
-interface BlueprintOption {
-  id: string;
-  labelKey: string;
-}
+import React from 'react';
+import { Play, Activity, FolderGit2, Settings } from 'lucide-react';
 
 interface TopBarProps {
-  onOpenTelemetry?: () => void;
+  onOpenTelemetry: () => void;
+  onOpenSettings: () => void;
 }
 
-/** All available blueprint options. */
-const BLUEPRINT_OPTIONS: BlueprintOption[] = [
-  { id: 'mobile-react-native',       labelKey: 'mobile_react_native.name' },
-  { id: 'web-nextjs-fullstack',       labelKey: 'web_nextjs_fullstack.name' },
-  { id: 'backend-node-microservice',  labelKey: 'backend_node_microservice.name' },
-  { id: 'backend-rust-service',       labelKey: 'backend_rust_service.name' },
-  { id: 'ml-python-pipeline',         labelKey: 'ml_python_pipeline.name' },
-];
-
-/**
- * Renders the top navigation bar with multi-agent execution triggers and telemetry.
- *
- * @returns Header JSX element
- */
-export function TopBar({ onOpenTelemetry }: TopBarProps) {
-  const { t } = useTranslation('layout');
-  const { t: tBlueprints } = useTranslation('blueprints');
-
-  const activeBlueprint = useAgentSpaceStore((s) => s.activeBlueprint);
-  const setActiveBlueprint = useAgentSpaceStore((s) => s.setActiveBlueprint);
-  const activeProject = useAgentSpaceStore((s) => s.activeProject);
-
-  const [isExecuting, setIsExecuting] = useState(false);
-
-  const handleBlueprintChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setActiveBlueprint(event.target.value || null);
-  };
-
-  const handleTriggerCycle = async () => {
-    if (isExecuting) return;
-    setIsExecuting(true);
-    try {
-      await agentOrchestrator.runWorkflowCycle('Implement Secure Authentication Flow & Rate Limiting');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
+export function TopBar({ onOpenTelemetry, onOpenSettings }: TopBarProps) {
   return (
-    <header className="top-bar" role="banner">
-      {/* ── Logo ────────────────────────────────────────── */}
-      <div className="top-bar__logo">
-        <span className="top-bar__logo-icon" aria-hidden="true">⬡</span>
-        <span className="top-bar__logo-text">AgentSpace</span>
+    <header className="topbar">
+      
+      {/* Brand */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ fontSize: 16, fontWeight: 700, color: '#f8f8fb', margin: 0, letterSpacing: 0.5 }}>
+          AgentSpace
+        </h1>
       </div>
 
-      <div className="top-bar__divider" aria-hidden="true" />
-
-      {/* ── Active project ──────────────────────────────── */}
-      <div className="top-bar__project">
-        <span className="top-bar__label">{t('top_bar.project_label')}</span>
-        <span className="top-bar__value">
-          {activeProject?.name ?? t('top_bar.project_placeholder')}
-        </span>
-      </div>
-
-      <div className="top-bar__divider" aria-hidden="true" />
-
-      {/* ── Blueprint selector ──────────────────────────── */}
-      <div className="top-bar__blueprint">
-        <label className="top-bar__label" htmlFor="blueprint-select">
-          {t('top_bar.blueprint_label')}
-        </label>
-        <select
-          id="blueprint-select"
-          className="top-bar__select"
-          value={activeBlueprint ?? ''}
-          onChange={handleBlueprintChange}
-        >
-          <option value="">{t('top_bar.blueprint_placeholder')}</option>
-          {BLUEPRINT_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {tBlueprints(option.labelKey)}
-            </option>
-          ))}
+      {/* Blueprint Selector (Mock logic for now) */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9090a2', fontSize: 12 }}>
+          <FolderGit2 size={16} />
+          <span>Blueprint:</span>
+        </div>
+        <select style={{ background: '#191922', color: '#f8f8fb', border: '1px solid #2c2c3b', borderRadius: 4, padding: '4px 8px', fontSize: 12, outline: 'none' }}>
+          <option value="web-nextjs">web-nextjs-fullstack.yaml</option>
+          <option value="backend-node">backend-node-microservice.yaml</option>
+          <option value="ml-python">ml-python-pipeline.yaml</option>
         </select>
+
+        {/* Start Workflow Button */}
+        <button 
+          style={{ 
+            background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 4, 
+            padding: '4px 12px', fontSize: 12, fontWeight: 600, display: 'flex', 
+            alignItems: 'center', gap: 6, cursor: 'pointer', marginLeft: 16
+          }}
+        >
+          <Play size={14} /> Start Workflow
+        </button>
       </div>
 
-      <div className="top-bar__spacer" />
+      {/* Right Icons: Telemetry & Settings */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', color: '#9090a2' }}>
+        <Activity size={18} style={{ cursor: 'pointer' }} onClick={onOpenTelemetry} title="Open Telemetry" />
+        <Settings size={18} style={{ cursor: 'pointer' }} onClick={onOpenSettings} title="Open Settings" />
+      </div>
 
-      {/* ── Run Workflow Button ─────────────────────────── */}
-      <button
-        className="top-bar__run-btn"
-        type="button"
-        onClick={handleTriggerCycle}
-        disabled={isExecuting}
-        title="Trigger Multi-Agent Iteration"
-      >
-        {isExecuting ? (
-          <>
-            <Loader2 size={12} className="top-bar__spin" aria-hidden="true" />
-            <span>Ajanlar Çalışıyor...</span>
-          </>
-        ) : (
-          <>
-            <Play size={12} fill="currentColor" aria-hidden="true" />
-            <span>Workflow Başlat</span>
-          </>
-        )}
-      </button>
-
-      <div className="top-bar__divider" aria-hidden="true" />
-
-      {/* ── Telemetry Dashboard Button ──────────────────── */}
-      <button
-        className="top-bar__btn"
-        type="button"
-        onClick={onOpenTelemetry}
-        title="Langfuse Telemetry & Cost Dashboard"
-        aria-label="Open Telemetry Dashboard"
-      >
-        <Activity size={14} aria-hidden="true" />
-      </button>
-
-      {/* ── Settings button ─────────────────────────────── */}
-      <button
-        className="top-bar__btn"
-        type="button"
-        title={t('top_bar.settings_tooltip')}
-        aria-label={t('top_bar.settings_tooltip')}
-      >
-        <Settings size={14} aria-hidden="true" />
-      </button>
     </header>
   );
 }
