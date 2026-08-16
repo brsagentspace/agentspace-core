@@ -1,23 +1,25 @@
 /**
  * @file RulesPanel.tsx
- * @description Side panel displaying active Blueprint rules and agent roles in real-time.
+ * @description Side panel displaying active Blueprint rules and 3-Stage RAG semantic search.
  *
- * Automatically fetches and parses the active YAML blueprint via BlueprintEngine,
- * presenting architecture guidelines, forbidden patterns, code standards,
- * and agent team allocations.
+ * Provides instant Contextual Retrieval across architectural decisions, blueprint guidelines,
+ * and SaaS standards with real-time token savings metrics.
  *
  * @module components/panels
  */
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search, Sparkles, X, ShieldAlert } from 'lucide-react';
 import { useAgentSpaceStore } from '../../store';
 import { resolveBlueprint } from '../../lib/blueprintEngine';
+import { ragPipeline } from '../../services/rag/RetrievalCascade';
 import type { BlueprintDefinition } from '../../types/blueprint';
+import type { RAGSearchResult } from '../../types/rag';
 import './RulesPanel.css';
 
 /**
- * Renders the interactive rules panel sidebar.
+ * Renders the interactive rules panel sidebar with 3-Stage RAG Search.
  *
  * @returns The rules panel aside element.
  */
@@ -29,6 +31,10 @@ export function RulesPanel() {
   const [blueprint, setBlueprint] = useState<BlueprintDefinition | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // RAG Search State
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [ragResult, setRagResult] = useState<RAGSearchResult | null>(null);
 
   useEffect(() => {
     if (!activeBlueprintId) {
@@ -59,6 +65,22 @@ export function RulesPanel() {
     };
   }, [activeBlueprintId]);
 
+  // Handle RAG Semantic Search
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 1) {
+      const result = ragPipeline.search(query);
+      setRagResult(result);
+    } else {
+      setRagResult(null);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setRagResult(null);
+  };
+
   return (
     <aside className="rules-panel" aria-label={t('rules_panel.title')}>
       {/* ── Header ──────────────────────────────────────── */}
@@ -76,9 +98,60 @@ export function RulesPanel() {
         )}
       </div>
 
+      {/* ── RAG Search Bar ──────────────────────────────── */}
+      <div className="rules-panel__search-box">
+        <Search size={12} className="rules-panel__search-icon" aria-hidden="true" />
+        <input
+          type="text"
+          className="rules-panel__search-input"
+          placeholder="RAG: Search rules & decisions..."
+          value={searchQuery}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            className="rules-panel__search-clear"
+            onClick={handleClearSearch}
+            aria-label="Clear search"
+          >
+            <X size={11} />
+          </button>
+        )}
+      </div>
+
       {/* ── Body ────────────────────────────────────────── */}
       <div className="rules-panel__body">
-        {!activeBlueprintId ? (
+        {/* RAG Search Results Mode */}
+        {ragResult && ragResult.topChunks.length > 0 ? (
+          <div className="rules-panel__rag-results">
+            <div className="rules-panel__rag-meta">
+              <span className="rules-panel__rag-count">
+                <Sparkles size={11} className="rules-panel__rag-icon" />
+                {ragResult.topChunks.length} Contextual Chunks
+              </span>
+              <span className="rules-panel__rag-tokens">
+                ~{ragResult.totalTokensSaved} tokens saved
+              </span>
+            </div>
+
+            {ragResult.topChunks.map((chunk, idx) => (
+              <div key={chunk.id || idx} className="rules-rag-card">
+                <div className="rules-rag-card__header">
+                  <span className="rules-rag-card__source">{chunk.sourceDocName}</span>
+                  <span className="rules-rag-card__badge">Top #{idx + 1}</span>
+                </div>
+                <div className="rules-rag-card__context">{chunk.contextHeader}</div>
+                <div className="rules-rag-card__content">{chunk.content}</div>
+              </div>
+            ))}
+          </div>
+        ) : searchQuery.trim().length > 1 && ragResult?.topChunks.length === 0 ? (
+          <div className="rules-panel__empty" role="status">
+            <p>No matching rules found in RAG index.</p>
+            <p className="rules-panel__empty-sub">Try searching "auth", "Tauri", "SaaS", or "emoji".</p>
+          </div>
+        ) : !activeBlueprintId ? (
           <div className="rules-panel__empty" role="status">
             <p>{t('rules_panel.empty_message')}</p>
             <p className="rules-panel__empty-sub">{t('rules_panel.empty_hint')}</p>
@@ -124,7 +197,8 @@ export function RulesPanel() {
               blueprint.code_standards.forbidden.length > 0 && (
                 <section className="rules-section">
                   <h4 className="rules-section__title rules-section__title--danger">
-                    {tBlueprints('panel.section_forbidden') || 'Strictly Forbidden'}
+                    <ShieldAlert size={12} aria-hidden="true" />
+                    <span>{tBlueprints('panel.section_forbidden') || 'Strictly Forbidden'}</span>
                   </h4>
                   <ul className="rules-list rules-list--forbidden">
                     {blueprint.code_standards.forbidden.map((rule, idx) => (
