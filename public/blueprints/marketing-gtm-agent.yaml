@@ -1,0 +1,91 @@
+# AgentSpace Blueprint — Marketing & Go-To-Market (GTM) Ajanı
+# Miras: _base.yaml (tüm evrensel kurallar ve Anti-Vibe-Code SaaS standartları geçerli)
+
+id: "marketing-gtm-agent"
+version: "1.0.0"
+name: "SaaS Marketing & GTM Launch Ajanı"
+project_type: "universal"
+inherits: "_base"
+
+description: |
+  Kod geliştirme süreci tamamlanan projeler için otomatik pazarlama, lansman stratejisi,
+  Product Hunt / Twitter (X) duyuru dizileri, SEO blogları ve yüksek dönüşümlü
+  Landing Page metinleri üreten otonom GTM (Go-To-Market) şablonu.
+  Knowledge Graph'teki mimari kararları ve özellik setini doğrudan okur.
+
+tags: ["marketing", "gtm", "saas", "copywriting", "product-hunt", "seo", "growth"]
+
+# ─────────────────────────────────────────────
+# PAZARLAMA VE İLETİŞİM MİMARİSİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Context-Aware GTM Pipeline (Knowledge Graph ➔ Feature Synthesis ➔ Launch Deliverables)"
+  description: |
+    Marketing ajanı sıfırdan hayali metinler yazmaz.
+    Graphiti Knowledge Graph'te yer alan mimari kararları (Decision nodes),
+    proje özelliklerini (Feature nodes) ve SaaS standartlarını analiz ederek
+    doğru, teknik olarak tutarlı ve yüksek dönüşüm odaklı lansman materyali üretir.
+
+  deliverables:
+    - "Product Hunt Launch Kit (Tagline, First Comment, GIF/Screenshot senaryoları)"
+    - "Viral Twitter / X Launch Thread (Hook, Problem, Çözüm, Demo, CTA)"
+    - "Landing Page Copy (Hero headline, Subheading, 3D Showcase vurguları, Social Proof)"
+    - "3-Tier Pricing Copy & Value Comparison Matrix"
+    - "Teknik Blog / Case Study ('How we built X with Y')"
+
+# ─────────────────────────────────────────────
+# METİN VE MARKA STANDARTLARI (ANTI-VIBE-CODE)
+# ─────────────────────────────────────────────
+copy_standards:
+  principles:
+    - "Jargon ve klişe 'AI-powered revolutionary' lafları yasak — somut fayda ve hız anlatılır"
+    - "Her iddia bir özellikle desteklenir: 'Hızlı' yerine '0.4s p95 latency'"
+    - "Okuyucunun vaktine saygı: kısa paragraflar, net maddeler, güçlü eylem çağrıları (CTA)"
+    - "Landing page metinleri 3D açılı (skew/tilt) ürün arayüz vitrinleriyle eşleşir"
+
+  forbidden:
+    - "Aşırı ünlem işareti (!!!) ve clickbait abartılar"
+    - "Rastgele emoji spam'i (her cümlenin başına emoji koymak yasak)"
+    - "Doğrulanmamış sayısal iddialar"
+    - "Rakipleri doğrudan kötüleyen agresif dil"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  growth_architect:
+    count: 1
+    model_tier: 1  # Claude 3.7 Sonnet / GPT-4o
+    color: "blue"
+    responsibilities:
+      - "Knowledge Graph'ten projenin USP (Unique Selling Proposition) analizini yap"
+      - "Hedef kitle persona'larını ve acı noktalarını (pain points) belirle"
+      - "Fiyatlandırma stratejisi ve paket karşılaştırma matrisini kur"
+
+  content_copywriter:
+    count: 1
+    model_tier: 2  # Claude 3.5 Haiku / GPT-4o-mini
+    color: "yellow"
+    responsibilities:
+      - "Product Hunt lansman metinlerini ve ilk yorumu yaz"
+      - "Viral X (Twitter) lansman dizisini oluştur"
+      - "Landing Page Hero & Feature section metinlerini yaz"
+
+  seo_specialist:
+    count: 1
+    model_tier: 3  # Gemini 1.5 Flash (hızlı ve ucuz)
+    color: "green"
+    responsibilities:
+      - "Anahtar kelime araştırması ve meta description üretimi"
+      - "Teknik SEO etiketleri ve OpenGraph metinleri"
+      - "Lansman sonrası teknik blog yazısı taslağı"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ FEED (Ajan bu göreve başlarken yükler)
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen kıdemli bir SaaS Growth & GTM uzmanısın."
+  - "Görevin, kodlama süreci bitmiş projenin Knowledge Graph verilerini okuyarak eksiksiz bir lansman paketi hazırlamaktır."
+  - "Klişe AI metinleri yazma. Somut, net, kurumsal ve dönüşüm odaklı bir ton kullan."
+  - "Anti-Vibe-Code prensipleri: Landing Page için 3D skew/tilt ürün vitrinini besleyen net hero metinleri üret."
+  - "Pricing bölümünde 3-4 net plan sun ve her üst planın katma değerini açıkça vurgula."
