@@ -17,9 +17,27 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 8px;
   height: 100%;
   white-space: nowrap;
+}
+
+.status-icon {
+  color: #6a6a7e;
+  flex-shrink: 0;
+}
+
+.status-icon--green {
+  color: #3fb950;
+}
+
+.status-icon--warn {
+  color: #f59e0b;
+}
+
+.status-sparkline {
+  margin-left: 4px;
+  opacity: 0.85;
 }
 
 .status-item--token {
