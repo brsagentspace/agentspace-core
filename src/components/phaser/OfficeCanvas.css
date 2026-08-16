@@ -1,0 +1,53 @@
+.office-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0e;
+  overflow: hidden;
+}
+
+.office-canvas__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Subtle grid background */
+.office-canvas__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(#1a1a2208 1px, transparent 1px),
+    linear-gradient(90deg, #1a1a2208 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.office-canvas__message {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #2a2a36;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.office-canvas__icon {
+  font-size: 32px;
+  color: #1e1e2a;
+  line-height: 1;
+}
+
+.office-canvas__message p {
+  margin: 0;
+  font-size: 13px;
+  color: #2e2e3e;
+  letter-spacing: 0.04em;
+}
+
+.office-canvas__sub {
+  font-size: 11px !important;
+  color: #1e1e2a !important;
+}

@@ -1,0 +1,113 @@
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 40px;
+  background: #0d0d0f;
+  border-bottom: 1px solid #1e1e24;
+  padding: 0 12px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.top-bar__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.top-bar__logo-icon {
+  font-size: 16px;
+  color: #3b82f6;
+  line-height: 1;
+}
+
+.top-bar__logo-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e2e8;
+  letter-spacing: 0.03em;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.top-bar__divider {
+  width: 1px;
+  height: 16px;
+  background: #1e1e24;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.top-bar__project,
+.top-bar__blueprint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.top-bar__label {
+  font-size: 11px;
+  color: #4a4a5a;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.top-bar__value {
+  font-size: 12px;
+  color: #9b9bab;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.top-bar__select {
+  appearance: none;
+  background: #16161e;
+  border: 1px solid #2a2a36;
+  border-radius: 4px;
+  color: #9b9bab;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 3px 24px 3px 8px;
+  cursor: pointer;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a4a5a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s;
+}
+
+.top-bar__select:hover,
+.top-bar__select:focus {
+  border-color: #3b82f6;
+  color: #e2e2e8;
+}
+
+.top-bar__select option {
+  background: #16161e;
+  color: #9b9bab;
+}
+
+.top-bar__spacer {
+  flex: 1;
+}
+
+.top-bar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #4a4a5a;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.top-bar__btn:hover {
+  background: #1e1e28;
+  color: #9b9bab;
+}
