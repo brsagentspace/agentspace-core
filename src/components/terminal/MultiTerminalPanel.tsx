@@ -2,8 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { Mosaic, MosaicWindow, MosaicNode } from 'react-mosaic-component';
+import { Mosaic, MosaicWindow } from 'react-mosaic-component';
 import { useTerminalStore, TerminalSession } from '../../store/terminalStore';
+import { useSettingsStore } from '../../store/settingsStore';
 
 import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
@@ -31,6 +32,11 @@ function TerminalPane({ session }: { session: TerminalSession }) {
     setTimeout(() => fitAddon.fit(), 10);
 
     term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m initialized (Dynamic Multiplexer).`);
+    
+    // Check active CLI Engine state
+    const activeEngine = useSettingsStore.getState().activeEngine;
+    term.writeln(`\x1b[38;2;160;160;160mCLI Engine backend: [${activeEngine}] connected.\x1b[0m`);
+
     if (session.command) {
       term.writeln(`$ ${session.command}`);
       term.write('> ');
@@ -68,7 +74,7 @@ function TerminalPane({ session }: { session: TerminalSession }) {
 export function MultiTerminalPanel() {
   const { sessions, mosaicNodes, setMosaicNodes } = useTerminalStore();
 
-  const ELEMENT_MAP: Record<string, JSX.Element> = {};
+  const ELEMENT_MAP: Record<string, React.ReactElement> = {};
   const TITLE_MAP: Record<string, string> = {};
 
   // Build maps for Mosaic Window
@@ -87,13 +93,11 @@ export function MultiTerminalPanel() {
           return (
             <MosaicWindow<string>
               path={path}
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f8f8fb', fontSize: 11 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: session.statusColor }}></div>
-                  {TITLE_MAP[id]}
-                </div>
-              }
+              title={TITLE_MAP[id]}
               toolbarControls={[
+                <div key="status" style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: session.statusColor }}></div>
+                </div>,
                 <span key="copy" style={{ cursor: 'pointer', padding: '0 4px' }}>📋</span>,
                 <span key="settings" style={{ cursor: 'pointer', padding: '0 4px' }}>⚙️</span>
               ]}

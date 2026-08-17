@@ -81,6 +81,28 @@ const INITIAL_AGENTS: Agent[] = [
     tokensUsed: 3100,
     position: { x: 440, y: 360 },
   },
+  {
+    id: 'agent_5',
+    name: 'Researcher-X',
+    role: 'researcher',
+    status: 'thinking',
+    color: 'blue',
+    modelTier: 2,
+    currentTask: 'Analyzing Graphiti knowledge graph patterns',
+    tokensUsed: 6700,
+    position: { x: 600, y: 180 },
+  },
+  {
+    id: 'agent_6',
+    name: 'Data-Analyst',
+    role: 'data',
+    status: 'idle',
+    color: 'green',
+    modelTier: 3,
+    currentTask: 'Processing token usage metrics',
+    tokensUsed: 2200,
+    position: { x: 600, y: 360 },
+  },
 ];
 
 export const useAgentSpaceStore = create<AgentSpaceStore>((set) => ({

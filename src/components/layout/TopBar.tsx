@@ -1,5 +1,6 @@
 import React from 'react';
-import { Play, Activity, FolderGit2, Settings } from 'lucide-react';
+import { Play, Activity, FolderGit2, Settings, Terminal } from 'lucide-react';
+import { useSettingsStore } from '../../store/settingsStore';
 
 interface TopBarProps {
   onOpenTelemetry: () => void;
@@ -7,6 +8,8 @@ interface TopBarProps {
 }
 
 export function TopBar({ onOpenTelemetry, onOpenSettings }: TopBarProps) {
+  const activeEngine = useSettingsStore(state => state.activeEngine);
+  
   return (
     <header className="topbar">
       
@@ -39,6 +42,12 @@ export function TopBar({ onOpenTelemetry, onOpenSettings }: TopBarProps) {
         >
           <Play size={14} /> Start Workflow
         </button>
+      </div>
+
+      {/* Active CLI Engine Badge */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: '#2c2c3b', padding: '4px 10px', borderRadius: 12, fontSize: 11, color: '#f8f8fb' }}>
+        <Terminal size={12} style={{ color: '#8b5cf6' }} />
+        <span>CLI: <strong>{activeEngine}</strong></span>
       </div>
 
       {/* Right Icons: Telemetry & Settings */}

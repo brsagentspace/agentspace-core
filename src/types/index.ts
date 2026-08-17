@@ -2,7 +2,7 @@
 
 export type AgentStatus = "idle" | "walking" | "working" | "thinking" | "done" | "blocked";
 
-export type AgentRole = "architect" | "frontend" | "backend" | "qa" | "researcher" | "ml";
+export type AgentRole = "architect" | "frontend" | "backend" | "qa" | "researcher" | "data" | "ml";
 
 export type ModelTier = 1 | 2 | 3;
 
