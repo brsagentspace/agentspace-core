@@ -103,8 +103,9 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
   term.loadAddon(fit);
   term.loadAddon(new WebLinksAddon());
 
+  const engineLabel = session.engine ?? activeEngine;
   term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m oturumu hazır.`);
-  term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${activeEngine}] bağlı.\x1b[0m`);
+  term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${engineLabel}] bağlı.\x1b[0m`);
 
   const entry = { term, fit };
   entries.set(session.id, entry);

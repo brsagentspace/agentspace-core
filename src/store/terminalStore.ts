@@ -20,6 +20,8 @@ export interface TerminalSession {
   title: string;
   statusColor: string;
   command?: string;
+  /** CLI engine this session runs (claude/codex/gemini); falls back to global */
+  engine?: string;
 }
 
 interface TerminalState {
@@ -33,6 +35,8 @@ interface TerminalState {
   /** Creates a session record and returns its id (layout is caller's job). */
   createSession: (partial?: Partial<TerminalSession>) => string;
   removeSession: (id: string) => void;
+  /** Switches a session's CLI engine (caller restarts its terminal). */
+  setSessionEngine: (id: string, engine: string) => void;
   /** Restores the default workspace (used when switching projects). */
   resetToDefault: () => void;
   /** Restores a previously saved workspace snapshot (project switching). */
@@ -54,9 +58,9 @@ export function engineCommand(): string {
 const defaultSessions = (): Record<string, TerminalSession> => {
   const cmd = engineCommand();
   return {
-    architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: cmd },
-    frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: cmd },
-    backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: cmd },
+    architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: cmd, engine: cmd },
+    frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: cmd, engine: cmd },
+    backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: cmd, engine: cmd },
   };
 };
 
@@ -86,6 +90,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       agentId: '',
       title: `Terminal ${n}`,
       statusColor: '#6b7280',
+      engine: partial?.engine ?? partial?.command ?? engineCommand(),
       ...partial,
     };
     set((state) => ({
@@ -100,6 +105,18 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       const sessions = { ...state.sessions };
       delete sessions[id];
       return { sessions, zoomedId: state.zoomedId === id ? null : state.zoomedId };
+    }),
+
+  setSessionEngine: (id, engine) =>
+    set((state) => {
+      const session = state.sessions[id];
+      if (!session) return state;
+      return {
+        sessions: {
+          ...state.sessions,
+          [id]: { ...session, engine, command: engine },
+        },
+      };
     }),
 
   resetToDefault: () =>

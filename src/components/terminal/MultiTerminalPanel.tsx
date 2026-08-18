@@ -22,6 +22,9 @@ import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
 import './MultiTerminalPanel.css';
 
+/** Selectable CLI engines (matches src-tauri cli_engine detection). */
+const ENGINES = ['claude', 'codex', 'gemini'];
+
 /** Attaches the session's persistent terminal into this pane. */
 function TerminalPane({ session }: { session: TerminalSession }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +58,16 @@ export function MultiTerminalPanel() {
     const { term } = getOrCreateTerminal(session, activeEngine);
     const selection = term.getSelection();
     if (selection) void navigator.clipboard.writeText(selection);
+  };
+
+  /** Restarts a session's terminal on a different CLI engine. */
+  const switchEngine = (session: TerminalSession, engine: string) => {
+    if ((session.engine ?? activeEngine) === engine) return;
+    disposeTerminal(session.id);
+    // Give the pty_kill IPC a beat before the same session id respawns.
+    window.setTimeout(() => {
+      useTerminalStore.getState().setSessionEngine(session.id, engine);
+    }, 90);
   };
 
   const splitPane = (id: string, path: MosaicPath, direction: MosaicDirection) => {
@@ -127,7 +140,17 @@ export function MultiTerminalPanel() {
       <div className="term-toolbar">
         <span className="term-status-dot" style={{ background: session.statusColor }} />
         <span className="term-toolbar-title">{session.title}</span>
-        <span className="term-chip">CLI: {activeEngine}</span>
+        <select
+          className="term-chip term-chip-select"
+          title="Bu oturumun CLI motoru — değiştirince oturum yeniden başlar"
+          value={session.engine ?? activeEngine}
+          onMouseDown={e => e.stopPropagation()}
+          onChange={e => switchEngine(session, e.target.value)}
+        >
+          {ENGINES.map(engine => (
+            <option key={engine} value={engine}>CLI: {engine}</option>
+          ))}
+        </select>
         <div className="term-toolbar-actions">
           <button className="term-action" title="Seçimi kopyala" onClick={() => copySelection(session)}>
             <Copy size={13} />
