@@ -120,35 +120,41 @@ export function MultiTerminalPanel() {
     return () => window.removeEventListener('agentspace:focus-terminal', onFocus);
   }, []);
 
-  const renderControls = (session: TerminalSession, path: MosaicPath): React.ReactNode[] => {
+  /** Prototype-styled toolbar: dot + title left, CLI chip + actions right. */
+  const renderToolbar = (session: TerminalSession, path: MosaicPath): React.ReactElement => {
     const isZoomed = zoomedId === session.id;
-    return [
-      <div key="status" className="term-status-dot" style={{ background: session.statusColor }} />,
-      <button key="copy" className="term-action" title="Seçimi kopyala" onClick={() => copySelection(session)}>
-        <Copy size={13} />
-      </button>,
-      !isZoomed && (
-        <button key="split-r" className="term-action" title="Sağa böl" onClick={() => splitPane(session.id, path, 'row')}>
-          <SplitSquareHorizontal size={13} />
-        </button>
-      ),
-      !isZoomed && (
-        <button key="split-d" className="term-action" title="Aşağı böl" onClick={() => splitPane(session.id, path, 'column')}>
-          <SplitSquareVertical size={13} />
-        </button>
-      ),
-      <button
-        key="zoom"
-        className="term-action"
-        title={isZoomed ? 'Düzene dön' : 'Tam ekran (zoom)'}
-        onClick={() => setZoomedId(isZoomed ? null : session.id)}
-      >
-        {isZoomed ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-      </button>,
-      <button key="close" className="term-action" title="Kapat" onClick={() => closePane(session.id, path)}>
-        <X size={14} />
-      </button>,
-    ].filter(Boolean) as React.ReactNode[];
+    return (
+      <div className="term-toolbar">
+        <span className="term-status-dot" style={{ background: session.statusColor }} />
+        <span className="term-toolbar-title">{session.title}</span>
+        <span className="term-chip">CLI: {activeEngine}</span>
+        <div className="term-toolbar-actions">
+          <button className="term-action" title="Seçimi kopyala" onClick={() => copySelection(session)}>
+            <Copy size={13} />
+          </button>
+          {!isZoomed && (
+            <button className="term-action" title="Sağa böl" onClick={() => splitPane(session.id, path, 'row')}>
+              <SplitSquareHorizontal size={13} />
+            </button>
+          )}
+          {!isZoomed && (
+            <button className="term-action" title="Aşağı böl" onClick={() => splitPane(session.id, path, 'column')}>
+              <SplitSquareVertical size={13} />
+            </button>
+          )}
+          <button
+            className="term-action"
+            title={isZoomed ? 'Düzene dön' : 'Tam ekran (zoom)'}
+            onClick={() => setZoomedId(isZoomed ? null : session.id)}
+          >
+            {isZoomed ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+          <button className="term-action" title="Kapat" onClick={() => closePane(session.id, path)}>
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const sessionCount = Object.keys(sessions).length;
@@ -181,7 +187,7 @@ export function MultiTerminalPanel() {
                 <MosaicWindow<string>
                   path={path}
                   title={session.title}
-                  toolbarControls={renderControls(session, path)}
+                  renderToolbar={() => renderToolbar(session, path)}
                 >
                   <TerminalPane session={session} />
                 </MosaicWindow>

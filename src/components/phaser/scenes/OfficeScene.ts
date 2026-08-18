@@ -303,7 +303,17 @@ export class OfficeScene extends Phaser.Scene {
     // Half-step zoom keeps pixels crisp on retina; never below 0.5.
     const zoom = Math.max(0.5, Math.floor(fit * 2) / 2);
     cam.setZoom(zoom);
-    cam.centerOn(WORLD_W / 2, WORLD_H / 2);
+    // Anchor the office to the LEFT edge (16px pad); center vertically.
+    // Phaser zooms around the viewport center, so compensate scroll:
+    // worldView.x = scrollX + (w - w/zoom)/2.
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const desiredX = -16;
+    const desiredY = (WORLD_H - h / zoom) / 2;
+    cam.setScroll(
+      desiredX - (w - w / zoom) / 2,
+      desiredY - (h - h / zoom) / 2,
+    );
   }
 
   /** Mouse-wheel zoom (0.5 steps) + drag panning, muratify-style. */
