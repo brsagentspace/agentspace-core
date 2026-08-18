@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopBar } from './components/layout/TopBar';
 import { OfficeCanvas } from './components/phaser/OfficeCanvas';
 import { MultiTerminalPanel } from './components/terminal/MultiTerminalPanel';
-import { RulesPanel } from './components/panels/RulesPanel';
+import { RulesDrawer } from './components/panels/RulesDrawer';
 import { ObservabilityModal } from './components/panels/ObservabilityModal';
 import { SettingsModal } from './components/panels/SettingsModal';
 import { AddAgentModal } from './components/panels/AddAgentModal';
@@ -17,6 +17,7 @@ function App() {
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [view, setView] = useState<AppView>('office');
 
   return (
@@ -27,6 +28,7 @@ function App() {
           onOpenTelemetry={() => setIsTelemetryOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenAddAgent={() => setIsAddAgentOpen(true)}
+          onToggleRules={() => setIsRulesOpen(o => !o)}
           view={view}
           onViewChange={setView}
         />
@@ -57,21 +59,10 @@ function App() {
             </div>
           </div>
 
-          {/* Bottom Row: Terminal + Rules */}
-          <div className="workspace-bottom">
-            {/* Center Column: Multi-Terminal Pane (Mosaic) */}
+          {/* Bottom Row: full-width terminal workspace */}
+          <div className="workspace-bottom" style={{ gridTemplateColumns: '1fr' }}>
             <div className="terminal-column" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
                <MultiTerminalPanel />
-            </div>
-
-            {/* Right Column: Blueprint Panel */}
-            <div className="panel tasks-column">
-              <div className="panel-header">
-                <span style={{ color: '#f8f8fb' }}>| BLUEPRINT RULES</span>
-              </div>
-              <div className="panel-content">
-                <RulesPanel />
-              </div>
             </div>
           </div>
 
@@ -91,6 +82,11 @@ function App() {
         <AddAgentModal
           isOpen={isAddAgentOpen}
           onClose={() => setIsAddAgentOpen(false)}
+        />
+
+        <RulesDrawer
+          isOpen={isRulesOpen}
+          onClose={() => setIsRulesOpen(false)}
         />
       </div>
     </QueryClientProvider>

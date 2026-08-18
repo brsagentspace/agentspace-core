@@ -5,7 +5,8 @@
     "project_placeholder": "—",
     "blueprint_label": "Blueprint",
     "blueprint_placeholder": "Seç...",
-    "settings_tooltip": "Ayarlar"
+    "settings_tooltip": "Ayarlar",
+    "rules_button": "Kurallar"
   },
   "status_bar": {
     "agents_label": "Ajanlar",
