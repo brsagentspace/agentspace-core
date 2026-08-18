@@ -1,7 +1,9 @@
 import type { CSSProperties } from 'react';
-import { Play, Activity, FolderGit2, Settings, Terminal, UserPlus, BookOpenCheck } from 'lucide-react';
+import { Play, Activity, FolderGit2, Settings, Terminal, UserPlus, BookOpenCheck, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useProjectStore } from '../../store/projectStore';
+import { openProject, goHome } from '../../services/projectController';
 
 export type AppView = 'office' | 'memory';
 
@@ -12,10 +14,13 @@ interface TopBarProps {
   onToggleRules: () => void;
   view: AppView;
   onViewChange: (view: AppView) => void;
+  inProject: boolean;
 }
 
-export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onToggleRules, view, onViewChange }: TopBarProps) {
+export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onToggleRules, view, onViewChange, inProject }: TopBarProps) {
   const activeEngine = useSettingsStore(state => state.activeEngine);
+  const projects = useProjectStore(s => s.projects);
+  const activeProjectId = useProjectStore(s => s.activeProjectId);
   const { t } = useTranslation('agents');
   const { t: tm } = useTranslation('memory');
   const { t: tl } = useTranslation('layout');
@@ -41,6 +46,8 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
         </h1>
       </div>
 
+      {inProject && (<>
+
       {/* View Tabs */}
       <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
         <button style={tabStyle(view === 'office')} onClick={() => onViewChange('office')}>
@@ -51,16 +58,26 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
         </button>
       </div>
 
-      {/* Blueprint Selector (Mock logic for now) */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      {/* Project switcher */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span title={tl('top_bar.home_tooltip')} style={{ display: 'flex' }}>
+          <Home
+            size={16}
+            style={{ cursor: 'pointer', color: '#9090a2' }}
+            onClick={goHome}
+          />
+        </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9090a2', fontSize: 12 }}>
           <FolderGit2 size={16} />
-          <span>Blueprint:</span>
         </div>
-        <select style={{ background: '#191922', color: '#f8f8fb', border: '1px solid #2c2c3b', borderRadius: 4, padding: '4px 8px', fontSize: 12, outline: 'none' }}>
-          <option value="web-nextjs">web-nextjs-fullstack.yaml</option>
-          <option value="backend-node">backend-node-microservice.yaml</option>
-          <option value="ml-python">ml-python-pipeline.yaml</option>
+        <select
+          value={activeProjectId ?? ''}
+          onChange={(e) => openProject(e.target.value)}
+          style={{ background: '#191922', color: '#f8f8fb', border: '1px solid #2c2c3b', borderRadius: 4, padding: '4px 8px', fontSize: 12, outline: 'none', maxWidth: 180 }}
+        >
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
         </select>
 
         {/* Start Workflow Button */}
@@ -98,6 +115,8 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
           <BookOpenCheck size={14} style={{ color: '#34d399' }} /> {tl('top_bar.rules_button')}
         </button>
       </div>
+
+      </>)}
 
       {/* Active CLI Engine Badge */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: '#2c2c3b', padding: '4px 10px', borderRadius: 12, fontSize: 11, color: '#f8f8fb' }}>

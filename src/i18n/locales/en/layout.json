@@ -6,7 +6,8 @@
     "blueprint_label": "Blueprint",
     "blueprint_placeholder": "Select...",
     "settings_tooltip": "Settings",
-    "rules_button": "Rules"
+    "rules_button": "Rules",
+    "home_tooltip": "Projects"
   },
   "status_bar": {
     "agents_label": "Agents",
@@ -32,5 +33,21 @@
   "terminal_panel": {
     "add_tab_tooltip": "Open new terminal",
     "placeholder_hint": "xterm.js — active in Phase 3"
+  },
+  "home": {
+    "title": "PROJECTS",
+    "empty": "You do not have any projects yet.",
+    "empty_sub": "A project bundles its agent team, office, memory map and rules.",
+    "create": "Create Project",
+    "create_title": "New project",
+    "name_label": "Name",
+    "name_placeholder": "e.g. influs-web",
+    "blueprint_label": "Blueprint",
+    "starter_label": "Start with the demo team",
+    "cancel": "Cancel",
+    "submit": "Create",
+    "agents_count": "{{count}} agents",
+    "last_opened": "last opened {{date}}",
+    "delete_tooltip": "Delete project"
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopBar } from './components/layout/TopBar';
 import { OfficeCanvas } from './components/phaser/OfficeCanvas';
@@ -8,6 +8,9 @@ import { ObservabilityModal } from './components/panels/ObservabilityModal';
 import { SettingsModal } from './components/panels/SettingsModal';
 import { AddAgentModal } from './components/panels/AddAgentModal';
 import { MemoryView } from './components/memory/MemoryView';
+import { HomeScreen } from './components/home/HomeScreen';
+import { useProjectStore } from './store/projectStore';
+import { hydrateActiveProject } from './services/projectController';
 import type { AppView } from './components/layout/TopBar';
 import './App.css';
 
@@ -19,6 +22,10 @@ function App() {
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [view, setView] = useState<AppView>('office');
+  const activeProjectId = useProjectStore(s => s.activeProjectId);
+
+  // Re-apply the persisted project's agent team after a full page load.
+  useEffect(() => { hydrateActiveProject(); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -31,17 +38,30 @@ function App() {
           onToggleRules={() => setIsRulesOpen(o => !o)}
           view={view}
           onViewChange={setView}
+          inProject={activeProjectId !== null}
         />
 
+        {/* Home: project launcher (no active project) */}
+        {activeProjectId === null && (
+          <div className="workspace" style={{ display: 'block' }}>
+            <HomeScreen />
+          </div>
+        )}
+
         {/* Memory Map view replaces the whole workspace */}
-        {view === 'memory' && (
+        {activeProjectId !== null && view === 'memory' && (
           <div className="workspace" style={{ display: 'block' }}>
             <MemoryView />
           </div>
         )}
 
-        {/* 2-Row Bento Box Workspace */}
-        <div className="workspace" style={view === 'memory' ? { display: 'none' } : undefined}>
+        {/* 2-Row Bento Box Workspace (mounted only inside a project so
+            Phaser never boots into a hidden 0x0 container) */}
+        {activeProjectId !== null && (
+        <div
+          className="workspace"
+          style={view === 'memory' ? { display: 'none' } : undefined}
+        >
           
           {/* Top Row: Office (Landscape Tilemap) */}
           <div className="panel office-column">
@@ -67,6 +87,7 @@ function App() {
           </div>
 
         </div>
+        )}
 
         {/* Modals */}
         <ObservabilityModal
