@@ -103,3 +103,9 @@ export function disposeTerminal(sessionId: string): void {
   entry.term.dispose();
   entries.delete(sessionId);
 }
+
+/** Destroys every live terminal (used when switching projects). */
+export function disposeAllTerminals(): void {
+  entries.forEach((entry) => entry.term.dispose());
+  entries.clear();
+}

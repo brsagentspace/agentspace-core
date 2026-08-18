@@ -32,22 +32,28 @@ interface TerminalState {
   /** Creates a session record and returns its id (layout is caller's job). */
   createSession: (partial?: Partial<TerminalSession>) => string;
   removeSession: (id: string) => void;
+  /** Restores the default workspace (used when switching projects). */
+  resetToDefault: () => void;
 }
 
+const defaultSessions = (): Record<string, TerminalSession> => ({
+  architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: 'langgraph plan init' },
+  frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: 'npm run dev' },
+  backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: 'cargo run' },
+});
+
+const defaultTree = (): MosaicNode<string> => ({
+  type: 'split',
+  direction: 'column',
+  children: [
+    { type: 'split', direction: 'row', children: ['architect', 'frontend'] },
+    'backend',
+  ],
+});
+
 export const useTerminalStore = create<TerminalState>((set, get) => ({
-  sessions: {
-    architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: 'langgraph plan init' },
-    frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: 'npm run dev' },
-    backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: 'cargo run' },
-  },
-  mosaicNodes: {
-    type: 'split',
-    direction: 'column',
-    children: [
-      { type: 'split', direction: 'row', children: ['architect', 'frontend'] },
-      'backend',
-    ],
-  },
+  sessions: defaultSessions(),
+  mosaicNodes: defaultTree(),
   zoomedId: null,
   nextIndex: 1,
 
@@ -76,5 +82,13 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       const sessions = { ...state.sessions };
       delete sessions[id];
       return { sessions, zoomedId: state.zoomedId === id ? null : state.zoomedId };
+    }),
+
+  resetToDefault: () =>
+    set({
+      sessions: defaultSessions(),
+      mosaicNodes: defaultTree(),
+      zoomedId: null,
+      nextIndex: 1,
     }),
 }));

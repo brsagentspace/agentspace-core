@@ -18,6 +18,7 @@ interface AgentSpaceStore {
 
   /** Active AI agents operating within the simulation */
   agents: Agent[];
+  setAgents: (agents: Agent[]) => void;
   addAgent: (agent: Agent) => void;
   updateAgent: (id: string, patch: Partial<Agent>) => void;
   removeAgent: (id: string) => void;
@@ -36,7 +37,7 @@ interface AgentSpaceStore {
 }
 
 /** Initial demo agent team to populate the office simulation */
-const INITIAL_AGENTS: Agent[] = [
+export const INITIAL_AGENTS: Agent[] = [
   {
     id: 'agent_1',
     name: 'Architect-01',
@@ -117,6 +118,7 @@ export const useAgentSpaceStore = create<AgentSpaceStore>((set) => ({
   setActiveProject: (project) => set({ activeProject: project }),
 
   agents: INITIAL_AGENTS,
+  setAgents: (agents) => set({ agents }),
   addAgent: (agent) =>
     set((state) => ({ agents: [...state.agents, agent] })),
   updateAgent: (id, patch) =>
