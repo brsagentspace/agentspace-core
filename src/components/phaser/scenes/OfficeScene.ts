@@ -767,6 +767,17 @@ export class OfficeScene extends Phaser.Scene {
       }
     });
     sprite.on('pointerout', () => this.visuals.get(agent.id)?.bubble.setVisible(false));
+    sprite.on('pointerdown', () => {
+      const v = this.visuals.get(agent.id);
+      if (!v) return;
+      window.dispatchEvent(new CustomEvent('agentspace:focus-terminal', {
+        detail: {
+          agentId: v.agent.id,
+          name: v.agent.name,
+          statusColor: `#${this.statusColor(v.agent.status).toString(16).padStart(6, '0')}`,
+        },
+      }));
+    });
 
     if (seated && desk) {
       this.sitAtDesk(visual);
