@@ -15,25 +15,33 @@ import { useTerminalStore } from '../store/terminalStore';
 import { disposeAllTerminals } from '../components/terminal/terminalRegistry';
 import type { ProjectMeta } from '../store/projectStore';
 
-/** Persists the currently open project's agent team back into the registry. */
-function saveActiveProjectAgents(): void {
-  const { activeProjectId, saveAgents } = useProjectStore.getState();
+/** Persists the open project's agent team and terminal workspace. */
+function saveActiveProjectState(): void {
+  const { activeProjectId, saveAgents, saveTerminal } = useProjectStore.getState();
   if (!activeProjectId) return;
   saveAgents(activeProjectId, useAgentSpaceStore.getState().agents);
+  const t = useTerminalStore.getState();
+  saveTerminal(activeProjectId, {
+    sessions: t.sessions,
+    mosaicNodes: t.mosaicNodes,
+    nextIndex: t.nextIndex,
+  });
 }
 
-/** Opens a project: loads its team and gives it a fresh terminal workspace. */
+/** Opens a project: loads its team and restores its terminal workspace. */
 export function openProject(id: string): void {
   const project = useProjectStore.getState().projects.find(p => p.id === id);
   if (!project) return;
 
-  saveActiveProjectAgents();
+  saveActiveProjectState();
 
-  const { agentsByProject, setActiveProjectId, touchProject } = useProjectStore.getState();
+  const { agentsByProject, terminalByProject, setActiveProjectId, touchProject } = useProjectStore.getState();
   useAgentSpaceStore.getState().setAgents(agentsByProject[id] ?? []);
 
   disposeAllTerminals();
-  useTerminalStore.getState().resetToDefault();
+  const snap = terminalByProject[id];
+  if (snap) useTerminalStore.getState().restoreSnapshot(snap);
+  else useTerminalStore.getState().resetToDefault();
 
   setActiveProjectId(id);
   touchProject(id);
@@ -58,13 +66,15 @@ export function createProject(name: string, blueprint: string, withStarterTeam: 
 
 /** Returns to the home screen, persisting the open project's state. */
 export function goHome(): void {
-  saveActiveProjectAgents();
+  saveActiveProjectState();
   useProjectStore.getState().setActiveProjectId(null);
 }
 
 /** Re-applies the persisted active project after a page load. */
 export function hydrateActiveProject(): void {
-  const { activeProjectId, agentsByProject } = useProjectStore.getState();
+  const { activeProjectId, agentsByProject, terminalByProject } = useProjectStore.getState();
   if (!activeProjectId) return;
   useAgentSpaceStore.getState().setAgents(agentsByProject[activeProjectId] ?? []);
+  const snap = terminalByProject[activeProjectId];
+  if (snap) useTerminalStore.getState().restoreSnapshot(snap);
 }

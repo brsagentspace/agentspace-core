@@ -13,6 +13,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Agent } from '../types';
+import type { TerminalSnapshot } from './terminalStore';
 
 export interface ProjectMeta {
   id: string;
@@ -27,10 +28,13 @@ interface ProjectState {
   activeProjectId: string | null;
   /** Saved agent team per project */
   agentsByProject: Record<string, Agent[]>;
+  /** Saved terminal workspace (layout + session meta) per project */
+  terminalByProject: Record<string, TerminalSnapshot>;
 
   addProject: (meta: ProjectMeta, agents: Agent[]) => void;
   setActiveProjectId: (id: string | null) => void;
   saveAgents: (projectId: string, agents: Agent[]) => void;
+  saveTerminal: (projectId: string, snap: TerminalSnapshot) => void;
   touchProject: (id: string) => void;
   deleteProject: (id: string) => void;
 }
@@ -41,6 +45,7 @@ export const useProjectStore = create<ProjectState>()(
       projects: [],
       activeProjectId: null,
       agentsByProject: {},
+      terminalByProject: {},
 
       addProject: (meta, agents) =>
         set((s) => ({
@@ -55,6 +60,11 @@ export const useProjectStore = create<ProjectState>()(
           agentsByProject: { ...s.agentsByProject, [projectId]: agents },
         })),
 
+      saveTerminal: (projectId, snap) =>
+        set((s) => ({
+          terminalByProject: { ...s.terminalByProject, [projectId]: snap },
+        })),
+
       touchProject: (id) =>
         set((s) => ({
           projects: s.projects.map((p) =>
@@ -66,9 +76,12 @@ export const useProjectStore = create<ProjectState>()(
         set((s) => {
           const agentsByProject = { ...s.agentsByProject };
           delete agentsByProject[id];
+          const terminalByProject = { ...s.terminalByProject };
+          delete terminalByProject[id];
           return {
             projects: s.projects.filter((p) => p.id !== id),
             agentsByProject,
+            terminalByProject,
             activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
           };
         }),
