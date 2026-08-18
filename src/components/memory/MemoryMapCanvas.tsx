@@ -20,7 +20,8 @@ const SPACE = 4096;
 interface MemoryMapCanvasProps {
   data: MemoryGraphData;
   agentFilter: string | null;
-  searchQuery: string;
+  /** Node ids matching the active search; null = no search filter. */
+  searchMatches: Set<string> | null;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   /** Hide memories ingested after this epoch-ms (null = show all). */
@@ -40,7 +41,7 @@ function hexToRgba(hex: string, alpha: number): [number, number, number, number]
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, alpha];
 }
 
-export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, onSelect, timeCutoff, focusTarget }: MemoryMapCanvasProps) {
+export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, onSelect, timeCutoff, focusTarget }: MemoryMapCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const labelHostRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph | null>(null);
@@ -241,10 +242,9 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
     const graph = graphRef.current;
     if (!graph) return;
 
-    const q = searchQuery.trim().toLowerCase();
     // Nothing to dim or highlight — restore base colors, but never touch the
     // engine on the initial mount (it would cancel the pending fitView).
-    if (q === '' && agentFilter === null && selectedId === null && timeCutoff === null) {
+    if (searchMatches === null && agentFilter === null && selectedId === null && timeCutoff === null) {
       if (!firstRecolorRef.current) {
         graph.setPointColors(prepared.baseColors);
         graph.render();
@@ -259,9 +259,7 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
       const isAgent = n.type === 'Agent';
       const owner = isAgent ? n.id : (n.attributes.agentId as string);
       const agentPass = agentFilter === null || owner === agentFilter;
-      const queryPass = q === '' ||
-        n.name.toLowerCase().includes(q) ||
-        n.summary.toLowerCase().includes(q);
+      const queryPass = searchMatches === null || searchMatches.has(n.id);
       const timePass = isAgent || timeCutoff === null || prepared.ingestion[i] <= timeCutoff;
       const pass = agentPass && queryPass && timePass;
 
@@ -273,7 +271,7 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
 
     graph.setPointColors(colors);
     graph.render();
-  }, [prepared, agentFilter, searchQuery, selectedId, timeCutoff]);
+  }, [prepared, agentFilter, searchMatches, selectedId, timeCutoff]);
 
   return (
     <>

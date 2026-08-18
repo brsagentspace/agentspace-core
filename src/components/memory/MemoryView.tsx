@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { agentColor } from '../../services/memory/MemoryStore';
 import type { MemoryGraphData } from '../../services/memory/MemoryStore';
 import { loadProjectMemory } from '../../services/memory/projectMemory';
+import { BM25Index } from '../../services/rag/BM25Index';
 import { useProjectStore } from '../../store/projectStore';
 import { useAgentSpaceStore } from '../../store';
 import { useMemoryJournalStore } from '../../store/memoryJournalStore';
@@ -50,6 +51,34 @@ export function MemoryView() {
   }, [projectId, demoMemory, teamKey, journalCount]);
 
   const agentIds = useMemo(() => Object.keys(data?.agents ?? {}), [data]);
+
+  /** BM25 index over memory titles+summaries (RetrievalCascade's index). */
+  const bm25 = useMemo(() => {
+    if (!data) return null;
+    const index = new BM25Index();
+    data.nodes.forEach(n => {
+      if (n.type === 'Agent') return;
+      const text = `${n.name} ${n.summary}`;
+      index.addChunk({
+        id: n.id, sourceDocId: n.id, sourceDocName: n.name,
+        contextHeader: '', content: text, fullText: text, tokenCount: 0,
+      });
+    });
+    return index;
+  }, [data]);
+
+  /** Hybrid matching: BM25 ranked hits ∪ substring hits. Null = no filter. */
+  const searchMatches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!data || !bm25 || q.length < 2) return null;
+    const ids = new Set(bm25.search(q, 300).map(r => r.chunk.id));
+    data.nodes.forEach(n => {
+      if (n.name.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q)) {
+        ids.add(n.id);
+      }
+    });
+    return ids;
+  }, [data, bm25, query]);
 
   const agentCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -141,7 +170,7 @@ export function MemoryView() {
           <MemoryMapCanvas
             data={data}
             agentFilter={agentFilter}
-            searchQuery={query}
+            searchMatches={searchMatches}
             selectedId={selectedId}
             onSelect={setSelectedId}
             timeCutoff={timeCutoff}
