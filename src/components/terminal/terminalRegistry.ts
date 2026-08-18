@@ -15,6 +15,9 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import type { TerminalSession } from '../../store/terminalStore';
 
+/** True when running inside the Tauri shell (real PTY available). */
+const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
 /** Dark theme aligned with the app palette (see App.css / MemoryView). */
 const TERMINAL_THEME = {
   background: '#0d0f15',
@@ -47,6 +50,39 @@ interface RegistryEntry {
 
 const entries = new Map<string, RegistryEntry>();
 
+// ── Tauri PTY bridge ─────────────────────────────────────────────────────────
+// One global event listener routes pty-output chunks to the owning terminal.
+
+let ptyListenersReady = false;
+
+async function ensurePtyListeners(): Promise<void> {
+  if (ptyListenersReady || !IS_TAURI) return;
+  ptyListenersReady = true;
+  const { listen } = await import('@tauri-apps/api/event');
+  await listen<{ id: string; data: string }>('pty-output', (e) => {
+    entries.get(e.payload.id)?.term.write(e.payload.data);
+  });
+  await listen<{ id: string }>('pty-exit', (e) => {
+    entries.get(e.payload.id)?.term.writeln('\r\n\x1b[38;2;144;144;162m[oturum kapandı]\x1b[0m');
+  });
+}
+
+async function connectPty(session: TerminalSession, entry: RegistryEntry): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  await ensurePtyListeners();
+  await invoke('pty_spawn', {
+    id: session.id,
+    cols: entry.term.cols || 80,
+    rows: entry.term.rows || 24,
+    cwd: null,
+  });
+  entry.term.onData((data) => { void invoke('pty_write', { id: session.id, data }); });
+  entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: session.id, cols, rows }); });
+  if (session.command) {
+    void invoke('pty_write', { id: session.id, data: `${session.command}\n` });
+  }
+}
+
 /**
  * Returns the live terminal for a session, creating (and booting) it on
  * first request.
@@ -69,20 +105,26 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
 
   term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m oturumu hazır.`);
   term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${activeEngine}] bağlı.\x1b[0m`);
-  if (session.command) {
-    term.writeln(`$ ${session.command}`);
-  }
-  term.write('> ');
-
-  // Demo echo until the real PTY bridge (Tauri) lands.
-  term.onData((data) => {
-    if (data === '\r') term.write('\r\n> ');
-    else if (data === '\x7f') term.write('\b \b');
-    else term.write(data);
-  });
 
   const entry = { term, fit };
   entries.set(session.id, entry);
+
+  if (IS_TAURI) {
+    // Real shell via the Tauri PTY bridge.
+    void connectPty(session, entry).catch((err) => {
+      term.writeln(`\x1b[38;2;248;113;113mPTY başlatılamadı: ${String(err)}\x1b[0m`);
+    });
+  } else {
+    // Browser dev fallback: demo echo.
+    if (session.command) term.writeln(`$ ${session.command}`);
+    term.write('> ');
+    term.onData((data) => {
+      if (data === '\r') term.write('\r\n> ');
+      else if (data === '\x7f') term.write('\b \b');
+      else term.write(data);
+    });
+  }
+
   return entry;
 }
 
@@ -96,16 +138,27 @@ export function attachTerminal(entry: RegistryEntry, container: HTMLElement): vo
   requestAnimationFrame(() => entry.fit.fit());
 }
 
+function killPty(sessionId: string): void {
+  if (!IS_TAURI) return;
+  void import('@tauri-apps/api/core').then(({ invoke }) =>
+    invoke('pty_kill', { id: sessionId }).catch(() => undefined),
+  );
+}
+
 /** Permanently destroys a session's terminal (called when the session is closed). */
 export function disposeTerminal(sessionId: string): void {
   const entry = entries.get(sessionId);
   if (!entry) return;
   entry.term.dispose();
   entries.delete(sessionId);
+  killPty(sessionId);
 }
 
 /** Destroys every live terminal (used when switching projects). */
 export function disposeAllTerminals(): void {
-  entries.forEach((entry) => entry.term.dispose());
+  entries.forEach((entry, id) => {
+    entry.term.dispose();
+    killPty(id);
+  });
   entries.clear();
 }
