@@ -23,7 +23,16 @@ interface MemoryMapCanvasProps {
   searchQuery: string;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** Hide memories ingested after this epoch-ms (null = show all). */
+  timeCutoff: number | null;
+  /** Bump nonce to glide the camera to a node (detail-panel link nav). */
+  focusTarget: { id: string; nonce: number } | null;
 }
+
+/** How many high-degree nodes get an HTML overlay label. */
+const LABEL_COUNT = 22;
+/** Labels appear once the camera is closer than this zoom level. */
+const LABEL_MIN_ZOOM = 0.85;
 
 /** rgba 0-1 floats from #rrggbb. */
 function hexToRgba(hex: string, alpha: number): [number, number, number, number] {
@@ -31,12 +40,15 @@ function hexToRgba(hex: string, alpha: number): [number, number, number, number]
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, alpha];
 }
 
-export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, onSelect }: MemoryMapCanvasProps) {
+export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, onSelect, timeCutoff, focusTarget }: MemoryMapCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const labelHostRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph | null>(null);
   const firstRecolorRef = useRef(true);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   // ── Static graph arrays, derived once per dataset ─────────────────────────
   const prepared = useMemo(() => {
@@ -68,6 +80,12 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
     const clusters: number[] = new Array(data.nodes.length);
     const baseColors = new Float32Array(data.nodes.length * 4);
     const sizes = new Float32Array(data.nodes.length);
+    const ingestion = data.nodes.map(n => Date.parse(n.timestamps.ingestionTime));
+    const memTimes = data.nodes
+      .map((n, i) => (n.type === 'Agent' ? NaN : ingestion[i]))
+      .filter(t => !Number.isNaN(t));
+    const tMin = Math.min(...memTimes);
+    const tMax = Math.max(...memTimes);
 
     data.nodes.forEach((n, i) => {
       const owner = (n.type === 'Agent' ? n.id : (n.attributes.agentId as string)) ?? agentIds[0];
@@ -81,18 +99,27 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
       clusters[i] = ai;
 
       const isAgent = n.type === 'Agent';
+      // Fresh memories glow, old ones fade toward the background.
+      const recency = tMax > tMin ? (ingestion[i] - tMin) / (tMax - tMin) : 1;
       const [cr, cg, cb, ca] = isAgent
         ? hexToRgba('#f8f8fb', 1)
-        : hexToRgba(agentColor(agentIds, owner), 0.92);
+        : hexToRgba(agentColor(agentIds, owner), 0.45 + 0.5 * recency);
       baseColors.set([cr, cg, cb, ca], i * 4);
       sizes[i] = isAgent ? 22 : 3.5 + Math.log2(1 + degree[i]) * 2.4;
     });
+
+    // Label candidates: agent anchors + highest-degree memories.
+    const labelIndices = data.nodes
+      .map((_, i) => i)
+      .sort((a, b) => (data.nodes[a].type === 'Agent' ? 1e9 : degree[a]) < (data.nodes[b].type === 'Agent' ? 1e9 : degree[b]) ? 1 : -1)
+      .slice(0, LABEL_COUNT);
 
     return {
       agentIds, idToIndex,
       positions, clusters, baseColors, sizes,
       links: new Float32Array(linkPairs),
       nodes: data.nodes,
+      ingestion, labelIndices,
     };
   }, [data]);
 
@@ -146,12 +173,68 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
     if (import.meta.env.DEV) {
       (window as unknown as Record<string, unknown>).__memGraph = graph;
     }
+
+    // ── LOD labels: HTML overlay, repositioned on a light RAF loop ─────────
+    const labelHost = labelHostRef.current;
+    const labelEls: HTMLDivElement[] = [];
+    if (labelHost) {
+      labelHost.innerHTML = '';
+      prepared.labelIndices.forEach(() => {
+        const el = document.createElement('div');
+        el.className = 'memory-node-label';
+        labelHost.appendChild(el);
+        labelEls.push(el);
+      });
+    }
+    let raf = 0;
+    let frame = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (!labelHost || frame++ % 3 !== 0) return;
+      const zoom = graph.getZoomLevel();
+      const showAll = zoom >= LABEL_MIN_ZOOM;
+      const pos = graph.getPointPositions();
+      const w = labelHost.clientWidth;
+      const h = labelHost.clientHeight;
+      prepared.labelIndices.forEach((idx, li) => {
+        const el = labelEls[li];
+        const node = prepared.nodes[idx];
+        const isSelected = node.id === selectedIdRef.current;
+        const isAgent = node.type === 'Agent';
+        if ((!showAll && !isSelected && !isAgent) || pos[idx * 2] === undefined) {
+          el.style.display = 'none';
+          return;
+        }
+        const [x, y] = graph.spaceToScreenPosition([pos[idx * 2], pos[idx * 2 + 1]]);
+        if (x < -40 || x > w + 40 || y < 0 || y > h) {
+          el.style.display = 'none';
+          return;
+        }
+        el.textContent = node.name.length > 26 ? `${node.name.slice(0, 26)}…` : node.name;
+        el.style.display = 'block';
+        el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y + 8)}px) translateX(-50%)`;
+        el.classList.toggle('selected', isSelected);
+        el.classList.toggle('agent', isAgent);
+      });
+    };
+    raf = requestAnimationFrame(tick);
+
     return () => {
+      cancelAnimationFrame(raf);
+      if (labelHost) labelHost.innerHTML = '';
       window.clearTimeout(fitTimer);
       graphRef.current = null;
       graph.destroy();
     };
   }, [prepared]);
+
+  // ── Detail-panel link navigation: glide the camera to the node ────────────
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph || !focusTarget) return;
+    const idx = prepared.idToIndex.get(focusTarget.id);
+    if (idx !== undefined) graph.zoomToPointByIndex(idx, 700);
+  }, [prepared, focusTarget]);
 
   // ── Filter / search / selection → recolor only ────────────────────────────
   useEffect(() => {
@@ -161,7 +244,7 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
     const q = searchQuery.trim().toLowerCase();
     // Nothing to dim or highlight — restore base colors, but never touch the
     // engine on the initial mount (it would cancel the pending fitView).
-    if (q === '' && agentFilter === null && selectedId === null) {
+    if (q === '' && agentFilter === null && selectedId === null && timeCutoff === null) {
       if (!firstRecolorRef.current) {
         graph.setPointColors(prepared.baseColors);
         graph.render();
@@ -173,14 +256,16 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
     const colors = new Float32Array(prepared.baseColors);
 
     prepared.nodes.forEach((n, i) => {
-      const owner = n.type === 'Agent' ? n.id : (n.attributes.agentId as string);
+      const isAgent = n.type === 'Agent';
+      const owner = isAgent ? n.id : (n.attributes.agentId as string);
       const agentPass = agentFilter === null || owner === agentFilter;
       const queryPass = q === '' ||
         n.name.toLowerCase().includes(q) ||
         n.summary.toLowerCase().includes(q);
-      const pass = agentPass && queryPass;
+      const timePass = isAgent || timeCutoff === null || prepared.ingestion[i] <= timeCutoff;
+      const pass = agentPass && queryPass && timePass;
 
-      if (!pass) colors[i * 4 + 3] = 0.05;
+      if (!pass) colors[i * 4 + 3] = timePass ? 0.05 : 0.02;
       if (n.id === selectedId) {
         colors.set([1, 1, 1, 1], i * 4);
       }
@@ -188,10 +273,12 @@ export function MemoryMapCanvas({ data, agentFilter, searchQuery, selectedId, on
 
     graph.setPointColors(colors);
     graph.render();
-  }, [prepared, agentFilter, searchQuery, selectedId]);
+  }, [prepared, agentFilter, searchQuery, selectedId, timeCutoff]);
 
-  // Note: auto zoom-to-selection was too aggressive; a gentler focus flow
-  // (zoom only when navigating via detail-panel links) is tracked in issue #5.
-
-  return <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />;
+  return (
+    <>
+      <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
+      <div ref={labelHostRef} className="memory-label-host" />
+    </>
+  );
 }

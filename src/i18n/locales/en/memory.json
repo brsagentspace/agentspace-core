@@ -15,5 +15,7 @@
   "panel_links": "Links",
   "panel_empty": "Select a node to inspect a memory",
   "loading": "Loading memory graph…",
-  "canvas_placeholder": "Memory map renders here (Phase 2)"
+  "canvas_placeholder": "Memory map renders here (Phase 2)",
+  "time_now": "now",
+  "time_tooltip": "Time travel: hide memories recorded after this date"
 }

@@ -239,3 +239,59 @@
   font-size: 16px;
   cursor: pointer;
 }
+
+/* ── Time scrubber ── */
+.memory-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-time input[type="range"] {
+  width: 140px;
+  accent-color: #8b5cf6;
+}
+
+.memory-time-label {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #9090a2;
+  min-width: 68px;
+}
+
+/* ── LOD node labels (HTML overlay) ── */
+.memory-label-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 4;
+}
+
+.memory-node-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  background: rgba(16, 16, 24, 0.82);
+  border: 1px solid rgba(58, 63, 85, 0.6);
+  border-radius: 3px;
+  color: #b8b8cc;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.memory-node-label.agent {
+  color: #f8f8fb;
+  font-weight: 700;
+  border-color: #4a4f6a;
+}
+
+.memory-node-label.selected {
+  color: #fff;
+  border-color: #8b5cf6;
+  background: rgba(36, 31, 56, 0.95);
+}

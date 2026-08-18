@@ -15,5 +15,7 @@
   "panel_links": "Bağlar",
   "panel_empty": "Bir hafızayı incelemek için düğüm seç",
   "loading": "Hafıza grafiği yükleniyor…",
-  "canvas_placeholder": "Hafıza haritası burada render edilecek (Faz 2)"
+  "canvas_placeholder": "Hafıza haritası burada render edilecek (Faz 2)",
+  "time_now": "şimdi",
+  "time_tooltip": "Zaman yolculuğu: bu tarihten sonra kaydedilen hafızaları gizle"
 }
