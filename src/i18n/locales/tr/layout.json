@@ -6,7 +6,8 @@
     "blueprint_label": "Blueprint",
     "blueprint_placeholder": "Seç...",
     "settings_tooltip": "Ayarlar",
-    "rules_button": "Kurallar"
+    "rules_button": "Kurallar",
+    "home_tooltip": "Projeler"
   },
   "status_bar": {
     "agents_label": "Ajanlar",
@@ -32,5 +33,21 @@
   "terminal_panel": {
     "add_tab_tooltip": "Yeni terminal aç",
     "placeholder_hint": "xterm.js — Faz 3'te aktif olacak"
+  },
+  "home": {
+    "title": "PROJELER",
+    "empty": "Henüz projen yok.",
+    "empty_sub": "Bir proje; ajan ekibini, ofisi, hafıza haritasını ve kuralları bir arada tutar.",
+    "create": "Proje Oluştur",
+    "create_title": "Yeni proje",
+    "name_label": "İsim",
+    "name_placeholder": "örn. influs-web",
+    "blueprint_label": "Blueprint",
+    "starter_label": "Demo ekiple başla",
+    "cancel": "Vazgeç",
+    "submit": "Oluştur",
+    "agents_count": "{{count}} ajan",
+    "last_opened": "son açılış {{date}}",
+    "delete_tooltip": "Projeyi sil"
   }
 }
