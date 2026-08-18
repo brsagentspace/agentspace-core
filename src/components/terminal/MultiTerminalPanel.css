@@ -1,0 +1,122 @@
+/* AgentSpace mosaic theme — overrides react-mosaic's structural CSS
+   with the app palette. No Blueprint theme dependency. */
+
+.mosaic-agentspace.mosaic {
+  background: #0b0d12;
+}
+
+.mosaic-agentspace .mosaic-tile {
+  margin: 4px;
+}
+
+.mosaic-agentspace .mosaic-window,
+.mosaic-agentspace .mosaic-preview {
+  border-radius: 6px;
+  border: 1px solid #2c2c3b;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.mosaic-agentspace .mosaic-window .mosaic-window-toolbar {
+  height: 28px;
+  background: #14161e;
+  border-bottom: 1px solid #2c2c3b;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.mosaic-agentspace .mosaic-window .mosaic-window-title {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #d8d8e8;
+  padding-left: 10px;
+}
+
+.mosaic-agentspace .mosaic-window .mosaic-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+}
+
+.mosaic-agentspace .mosaic-window-body {
+  background: #0d0f15;
+}
+
+/* Split lines */
+.mosaic-agentspace .mosaic-split {
+  background: transparent;
+  z-index: 3;
+}
+
+.mosaic-agentspace .mosaic-split:hover {
+  background: rgba(139, 92, 246, 0.25);
+}
+
+.mosaic-agentspace .mosaic-split .mosaic-split-line {
+  box-shadow: none;
+}
+
+/* Toolbar action buttons (lucide icons) */
+.term-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6f6f82;
+  cursor: pointer;
+  padding: 0;
+}
+
+.term-action:hover {
+  background: #23242f;
+  color: #f8f8fb;
+}
+
+.term-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+/* Terminal pane host */
+.term-pane {
+  width: 100%;
+  height: 100%;
+  background: #0d0f15;
+  overflow: hidden;
+  padding: 6px 0 0 8px;
+  box-sizing: border-box;
+}
+
+.term-pane > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* Slim strip above the mosaic */
+.term-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  background: #0b0d12;
+  border-bottom: 1px solid #1d1e28;
+  color: #9090a2;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+
+.term-strip .term-action {
+  margin-left: auto;
+}

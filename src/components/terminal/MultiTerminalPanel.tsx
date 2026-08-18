@@ -1,115 +1,90 @@
+/**
+ * @file MultiTerminalPanel.tsx
+ * @description Tiled terminal workspace (react-mosaic + xterm).
+ *
+ * Terminal instances live in terminalRegistry (outside React) so mosaic
+ * tree changes never destroy scrollback; panes only attach the terminal's
+ * DOM element. Toolbar actions use lucide icons.
+ *
+ * @module components/terminal
+ */
+
 import React, { useEffect, useRef } from 'react';
-import { Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { Copy } from 'lucide-react';
 import { Mosaic, MosaicWindow } from 'react-mosaic-component';
-import { useTerminalStore, TerminalSession } from '../../store/terminalStore';
+import { useTerminalStore } from '../../store/terminalStore';
+import type { TerminalSession } from '../../store/terminalStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { getOrCreateTerminal, attachTerminal } from './terminalRegistry';
 
 import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
+import './MultiTerminalPanel.css';
 
-/**
- * A single terminal pane instance wrapper
- */
+/** Attaches the session's persistent terminal into this pane. */
 function TerminalPane({ session }: { session: TerminalSession }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const activeEngine = useSettingsStore(s => s.activeEngine);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const term = new Terminal({
-      theme: { background: '#1e1e28', foreground: '#f8f8fb', cursor: '#8b5cf6' },
-      fontFamily: 'JetBrains Mono, monospace',
-      fontSize: 12,
-      cursorBlink: true,
-    });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
-    term.open(containerRef.current);
-    
-    // Fit takes a tiny bit of time after render
-    setTimeout(() => fitAddon.fit(), 10);
-
-    term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m initialized (Dynamic Multiplexer).`);
-    
-    // Check active CLI Engine state
-    const activeEngine = useSettingsStore.getState().activeEngine;
-    term.writeln(`\x1b[38;2;160;160;160mCLI Engine backend: [${activeEngine}] connected.\x1b[0m`);
-
-    if (session.command) {
-      term.writeln(`$ ${session.command}`);
-      term.write('> ');
-    }
-
-    // Basic echoing so user can type in the terminal
-    term.onData((data) => {
-      const char = data;
-      if (char === '\r') {
-        term.write('\r\n> ');
-      } else if (char === '\x7f') {
-        // Backspace
-        term.write('\b \b');
-      } else {
-        term.write(char);
-      }
-    });
-
-    const resizeObserver = new ResizeObserver(() => fitAddon.fit());
-    resizeObserver.observe(containerRef.current);
-
-    return () => {
-      resizeObserver.disconnect();
-      term.dispose();
-    };
-  }, [session]);
+    const el = containerRef.current;
+    if (!el) return;
+    const entry = getOrCreateTerminal(session, activeEngine);
+    attachTerminal(entry, el);
+    const ro = new ResizeObserver(() => entry.fit.fit());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [session, activeEngine]);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#1e1e28', overflow: 'hidden' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%', paddingLeft: 8, paddingTop: 4 }} />
+    <div className="term-pane">
+      <div ref={containerRef} />
     </div>
   );
 }
 
 export function MultiTerminalPanel() {
   const { sessions, mosaicNodes, setMosaicNodes } = useTerminalStore();
+  const activeEngine = useSettingsStore(s => s.activeEngine);
 
-  const ELEMENT_MAP: Record<string, React.ReactElement> = {};
-  const TITLE_MAP: Record<string, string> = {};
-
-  // Build maps for Mosaic Window
-  Object.keys(sessions).forEach((key) => {
-    ELEMENT_MAP[key] = <TerminalPane session={sessions[key]} />;
-    TITLE_MAP[key] = sessions[key].title;
-  });
+  const copySelection = (session: TerminalSession) => {
+    const { term } = getOrCreateTerminal(session, activeEngine);
+    const selection = term.getSelection();
+    if (selection) void navigator.clipboard.writeText(selection);
+  };
 
   return (
-    <div style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#13141a' }} className="mosaic-dark-theme">
+    <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
       <Mosaic<string>
+        className="mosaic-agentspace"
         renderTile={(id, path) => {
           const session = sessions[id];
-          if (!session) return <div>Invalid Session</div>;
+          if (!session) return <div className="term-pane" />;
+
+          const controls: React.ReactNode[] = [
+            <div
+              key="status"
+              className="term-status-dot"
+              style={{ background: session.statusColor }}
+            />,
+            <button
+              key="copy"
+              className="term-action"
+              title="Seçimi kopyala"
+              onClick={() => copySelection(session)}
+            >
+              <Copy size={13} />
+            </button>,
+          ];
 
           return (
-            <MosaicWindow<string>
-              path={path}
-              title={TITLE_MAP[id]}
-              toolbarControls={[
-                <div key="status" style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: session.statusColor }}></div>
-                </div>,
-                <span key="copy" style={{ cursor: 'pointer', padding: '0 4px' }}>📋</span>,
-                <span key="settings" style={{ cursor: 'pointer', padding: '0 4px' }}>⚙️</span>
-              ]}
-              className="custom-mosaic-window"
-            >
-              {ELEMENT_MAP[id]}
+            <MosaicWindow<string> path={path} title={session.title} toolbarControls={controls}>
+              <TerminalPane session={session} />
             </MosaicWindow>
           );
         }}
         value={mosaicNodes}
-        onChange={(newNode) => setMosaicNodes(newNode)}
-        className="mosaic-blueprint-theme bp3-dark"
+        onChange={setMosaicNodes}
       />
     </div>
   );
