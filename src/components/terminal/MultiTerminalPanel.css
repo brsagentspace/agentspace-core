@@ -200,3 +200,16 @@
   gap: 2px;
   flex-shrink: 0;
 }
+
+/* Engine chip as a select */
+.term-chip-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.term-chip-select:hover {
+  border-color: #8b5cf6;
+  color: #e8e8f0;
+}
