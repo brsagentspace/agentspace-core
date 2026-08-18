@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JsonMemoryStore, agentColor } from '../../services/memory/MemoryStore';
 import type { MemoryGraphData } from '../../services/memory/MemoryStore';
+import { MemoryMapCanvas } from './MemoryMapCanvas';
 import './MemoryView.css';
 
 const store = new JsonMemoryStore();
@@ -23,6 +24,7 @@ export function MemoryView() {
   const [data, setData] = useState<MemoryGraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agentFilter, setAgentFilter] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -45,6 +47,25 @@ export function MemoryView() {
   }, [data]);
 
   const memoryCount = data ? data.nodes.filter(n => n.type !== 'Agent').length : 0;
+
+  const selectedNode = useMemo(
+    () => data?.nodes.find(n => n.id === selectedId) ?? null,
+    [data, selectedId],
+  );
+
+  /** Relations touching the selected node, resolved to neighbor nodes. */
+  const selectedLinks = useMemo(() => {
+    if (!data || !selectedNode) return [];
+    const byId = new Map(data.nodes.map(n => [n.id, n]));
+    return data.relations
+      .filter(r => r.sourceId === selectedNode.id || r.targetId === selectedNode.id)
+      .map(r => {
+        const otherId = r.sourceId === selectedNode.id ? r.targetId : r.sourceId;
+        return { relation: r, other: byId.get(otherId) };
+      })
+      .filter(l => l.other)
+      .slice(0, 30);
+  }, [data, selectedNode]);
 
   return (
     <div className="memory-view">
@@ -70,10 +91,17 @@ export function MemoryView() {
       </div>
 
       <div className="memory-body">
-        <div className="memory-canvas-host" />
-        <div className="memory-canvas-placeholder">
-          {error ?? (data ? t('canvas_placeholder') : t('loading'))}
-        </div>
+        {data ? (
+          <MemoryMapCanvas
+            data={data}
+            agentFilter={agentFilter}
+            searchQuery={query}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        ) : (
+          <div className="memory-canvas-placeholder">{error ?? t('loading')}</div>
+        )}
 
         <div className="memory-legend">
           <div className="memory-legend-title">{t('legend_title')}</div>
@@ -99,7 +127,37 @@ export function MemoryView() {
         </div>
 
         <div className="memory-detail">
-          <div className="memory-detail-empty">{t('panel_empty')}</div>
+          {selectedNode ? (
+            <>
+              <button className="memory-detail-close" onClick={() => setSelectedId(null)}>×</button>
+              <h3>{selectedNode.name}</h3>
+              <p className="memory-detail-summary">{selectedNode.summary}</p>
+              <dl className="memory-detail-meta">
+                <dt>{t('panel_type')}</dt>
+                <dd>{selectedNode.type}</dd>
+                <dt>{t('panel_agent')}</dt>
+                <dd>{data?.agents[(selectedNode.attributes.agentId as string) ?? selectedNode.id] ?? '—'}</dd>
+                <dt>{t('panel_valid_time')}</dt>
+                <dd>{selectedNode.timestamps.validTime.slice(0, 10)}</dd>
+                <dt>{t('panel_ingestion_time')}</dt>
+                <dd>{selectedNode.timestamps.ingestionTime.slice(0, 10)}</dd>
+              </dl>
+              <div className="memory-detail-links-title">
+                {t('panel_links')} · {selectedLinks.length}
+              </div>
+              {selectedLinks.map(({ relation, other }) => (
+                <button
+                  key={relation.id}
+                  className="memory-detail-link"
+                  onClick={() => setSelectedId(other!.id)}
+                >
+                  [[{other!.name}]] · {relation.type}
+                </button>
+              ))}
+            </>
+          ) : (
+            <div className="memory-detail-empty">{t('panel_empty')}</div>
+          )}
         </div>
       </div>
     </div>
