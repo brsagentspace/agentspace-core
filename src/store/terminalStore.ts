@@ -11,6 +11,7 @@
 
 import { create } from 'zustand';
 import type { MosaicNode } from 'react-mosaic-component';
+import { useSettingsStore } from './settingsStore';
 
 export interface TerminalSession {
   id: string;
@@ -45,11 +46,19 @@ export interface TerminalSnapshot {
   nextIndex: number;
 }
 
-const defaultSessions = (): Record<string, TerminalSession> => ({
-  architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: 'langgraph plan init' },
-  frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: 'npm run dev' },
-  backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: 'cargo run' },
-});
+/** Agent sessions launch the active CLI engine (claude/codex/gemini). */
+export function engineCommand(): string {
+  return useSettingsStore.getState().activeEngine || 'claude';
+}
+
+const defaultSessions = (): Record<string, TerminalSession> => {
+  const cmd = engineCommand();
+  return {
+    architect: { id: 'architect', agentId: 'agent_1', title: 'Architect (Tier 1)', statusColor: '#10b981', command: cmd },
+    frontend: { id: 'frontend', agentId: 'agent_2', title: 'Frontend-Bot', statusColor: '#8b5cf6', command: cmd },
+    backend: { id: 'backend', agentId: 'agent_3', title: 'Backend-Bot', statusColor: '#3b82f6', command: cmd },
+  };
+};
 
 const defaultTree = (): MosaicNode<string> => ({
   type: 'split',

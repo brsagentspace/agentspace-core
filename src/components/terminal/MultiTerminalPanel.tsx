@@ -13,7 +13,7 @@ import React, { useEffect, useRef } from 'react';
 import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare } from 'lucide-react';
 import { Mosaic, MosaicWindow, createRemoveUpdate, updateTree } from 'react-mosaic-component';
 import type { MosaicNode, MosaicPath, MosaicDirection } from 'react-mosaic-component';
-import { useTerminalStore } from '../../store/terminalStore';
+import { useTerminalStore, engineCommand } from '../../store/terminalStore';
 import type { TerminalSession } from '../../store/terminalStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { getOrCreateTerminal, attachTerminal, disposeTerminal } from './terminalRegistry';
@@ -105,7 +105,9 @@ export function MultiTerminalPanel() {
         useTerminalStore.getState().setZoomedId(existing.id);
         return;
       }
-      const newId = useTerminalStore.getState().createSession({ agentId, title: name, statusColor });
+      const newId = useTerminalStore.getState().createSession({
+        agentId, title: name, statusColor, command: engineCommand(),
+      });
       const tree = focusRef.current.mosaicNodes;
       useTerminalStore.getState().setMosaicNodes(
         tree === null
