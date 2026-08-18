@@ -116,6 +116,7 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
     });
   } else {
     // Browser dev fallback: demo echo.
+    term.writeln('\x1b[38;2;251;191;36m⚠ Tarayıcı demo modu — gerçek shell yalnızca masaüstü uygulamada (npm run tauri dev).\x1b[0m');
     if (session.command) term.writeln(`$ ${session.command}`);
     term.write('> ');
     term.onData((data) => {
