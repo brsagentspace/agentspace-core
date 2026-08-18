@@ -8,7 +8,6 @@
  * @module main
  */
 
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 // i18n must be imported before App so translations are ready on mount.
