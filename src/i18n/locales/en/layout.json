@@ -7,7 +7,9 @@
     "blueprint_placeholder": "Select...",
     "settings_tooltip": "Settings",
     "rules_button": "Rules",
-    "home_tooltip": "Projects"
+    "home_tooltip": "Projects",
+    "start_workflow": "Start Workflow",
+    "workflow_running": "Working…"
   },
   "status_bar": {
     "agents_label": "Agents",

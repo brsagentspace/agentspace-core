@@ -13,6 +13,7 @@ import { useAgentSpaceStore, INITIAL_AGENTS } from '../store';
 import { useProjectStore } from '../store/projectStore';
 import { useTerminalStore } from '../store/terminalStore';
 import { disposeAllTerminals } from '../components/terminal/terminalRegistry';
+import { stopWorkflow } from './workflowSimulator';
 import type { ProjectMeta } from '../store/projectStore';
 
 /** Persists the open project's agent team and terminal workspace. */
@@ -33,6 +34,7 @@ export function openProject(id: string): void {
   const project = useProjectStore.getState().projects.find(p => p.id === id);
   if (!project) return;
 
+  stopWorkflow();
   saveActiveProjectState();
 
   const { agentsByProject, terminalByProject, setActiveProjectId, touchProject } = useProjectStore.getState();
@@ -67,8 +69,16 @@ export function createProject(name: string, blueprint: string, withStarterTeam: 
 
 /** Returns to the home screen, persisting the open project's state. */
 export function goHome(): void {
+  stopWorkflow();
   saveActiveProjectState();
   useProjectStore.getState().setActiveProjectId(null);
+}
+
+/** Persists the live team immediately (e.g. right after adding an agent). */
+export function persistTeamNow(): void {
+  const { activeProjectId, saveAgents } = useProjectStore.getState();
+  if (!activeProjectId) return;
+  saveAgents(activeProjectId, useAgentSpaceStore.getState().agents);
 }
 
 /** Re-applies the persisted active project after a page load. */

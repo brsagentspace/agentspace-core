@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useAgentSpaceStore } from '../../store';
 import { useProjectStore } from '../../store/projectStore';
 import { recordProjectMemory } from '../../services/memory/projectMemory';
+import { persistTeamNow } from '../../services/projectController';
 import type { Agent, AgentRole } from '../../types';
 import './AddAgentModal.css';
 
@@ -56,6 +57,7 @@ export function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
       position: { x: 0, y: 0 },
     };
     addAgent(agent);
+    persistTeamNow(); // survive reloads without a project switch
     // Live ingest: joining the team is the agent's first memory.
     const projectId = useProjectStore.getState().activeProjectId;
     if (projectId) {

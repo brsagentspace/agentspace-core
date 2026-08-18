@@ -7,7 +7,9 @@
     "blueprint_placeholder": "Seç...",
     "settings_tooltip": "Ayarlar",
     "rules_button": "Kurallar",
-    "home_tooltip": "Projeler"
+    "home_tooltip": "Projeler",
+    "start_workflow": "Workflow Başlat",
+    "workflow_running": "Çalışıyor…"
   },
   "status_bar": {
     "agents_label": "Ajanlar",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useProjectStore } from '../../store/projectStore';
 import { openProject, goHome } from '../../services/projectController';
+import { startWorkflow, useWorkflowStore } from '../../services/workflowSimulator';
 
 export type AppView = 'office' | 'memory';
 
@@ -21,6 +22,7 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
   const activeEngine = useSettingsStore(state => state.activeEngine);
   const projects = useProjectStore(s => s.projects);
   const activeProjectId = useProjectStore(s => s.activeProjectId);
+  const workflowRunning = useWorkflowStore(s => s.running);
   const { t } = useTranslation('agents');
   const { t: tm } = useTranslation('memory');
   const { t: tl } = useTranslation('layout');
@@ -81,14 +83,19 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
         </select>
 
         {/* Start Workflow Button */}
-        <button 
-          style={{ 
-            background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 4, 
-            padding: '4px 12px', fontSize: 12, fontWeight: 600, display: 'flex', 
-            alignItems: 'center', gap: 6, cursor: 'pointer', marginLeft: 16
+        <button
+          onClick={startWorkflow}
+          disabled={workflowRunning}
+          style={{
+            background: workflowRunning ? '#4c3a80' : '#8b5cf6',
+            color: '#fff', border: 'none', borderRadius: 4,
+            padding: '4px 12px', fontSize: 12, fontWeight: 600, display: 'flex',
+            alignItems: 'center', gap: 6,
+            cursor: workflowRunning ? 'default' : 'pointer', marginLeft: 16
           }}
         >
-          <Play size={14} /> Start Workflow
+          <Play size={14} />
+          {workflowRunning ? tl('top_bar.workflow_running') : tl('top_bar.start_workflow')}
         </button>
 
         {/* Add Agent Button */}
