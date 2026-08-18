@@ -25,6 +25,8 @@ export function MemoryView() {
   const [error, setError] = useState<string | null>(null);
   const [agentFilter, setAgentFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [timePct, setTimePct] = useState(100);
+  const [focusTarget, setFocusTarget] = useState<{ id: string; nonce: number } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -47,6 +49,25 @@ export function MemoryView() {
   }, [data]);
 
   const memoryCount = data ? data.nodes.filter(n => n.type !== 'Agent').length : 0;
+
+  /** Bi-temporal window: min/max ingestion time across memories. */
+  const timeRange = useMemo(() => {
+    if (!data) return null;
+    const times = data.nodes
+      .filter(n => n.type !== 'Agent')
+      .map(n => Date.parse(n.timestamps.ingestionTime));
+    return { min: Math.min(...times), max: Math.max(...times) };
+  }, [data]);
+
+  const timeCutoff = useMemo(() => {
+    if (!timeRange || timePct >= 100) return null;
+    return timeRange.min + (timeRange.max - timeRange.min) * (timePct / 100);
+  }, [timeRange, timePct]);
+
+  const focusNode = (id: string) => {
+    setSelectedId(id);
+    setFocusTarget(prev => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
+  };
 
   const selectedNode = useMemo(
     () => data?.nodes.find(n => n.id === selectedId) ?? null,
@@ -88,6 +109,18 @@ export function MemoryView() {
           placeholder={t('search_placeholder')}
           onChange={e => setQuery(e.target.value)}
         />
+        <div className="memory-time" title={t('time_tooltip')}>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={timePct}
+            onChange={e => setTimePct(Number(e.target.value))}
+          />
+          <span className="memory-time-label">
+            {timeCutoff === null ? t('time_now') : new Date(timeCutoff).toISOString().slice(0, 10)}
+          </span>
+        </div>
       </div>
 
       <div className="memory-body">
@@ -98,6 +131,8 @@ export function MemoryView() {
             searchQuery={query}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            timeCutoff={timeCutoff}
+            focusTarget={focusTarget}
           />
         ) : (
           <div className="memory-canvas-placeholder">{error ?? t('loading')}</div>
@@ -149,7 +184,7 @@ export function MemoryView() {
                 <button
                   key={relation.id}
                   className="memory-detail-link"
-                  onClick={() => setSelectedId(other!.id)}
+                  onClick={() => focusNode(other!.id)}
                 >
                   [[{other!.name}]] · {relation.type}
                 </button>
