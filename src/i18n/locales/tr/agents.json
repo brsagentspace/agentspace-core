@@ -5,7 +5,18 @@
     "backend": "Backend Geliştirici",
     "qa": "QA Mühendisi",
     "researcher": "Araştırmacı",
+    "data": "Veri Analisti",
     "ml": "ML Mühendisi"
+  },
+  "add_agent": {
+    "button": "Ajan Ekle",
+    "title": "Ajan ekle",
+    "name_label": "İsim",
+    "name_placeholder": "örn. Nova",
+    "role_label": "Rol",
+    "character_label": "Karakter",
+    "cancel": "Vazgeç",
+    "submit": "Yerleştir"
   },
   "status": {
     "idle": "Boşta",

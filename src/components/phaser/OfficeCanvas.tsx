@@ -46,8 +46,9 @@ export function OfficeCanvas() {
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
       render: {
-        pixelArt: false,
-        antialias: true,
+        pixelArt: true,
+        antialias: false,
+        roundPixels: true,
       },
       scene: [scene],
     };

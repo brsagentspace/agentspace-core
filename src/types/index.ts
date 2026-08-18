@@ -14,6 +14,8 @@ export interface Agent {
   role: AgentRole;
   status: AgentStatus;
   color: AgentColor;
+  /** LimeZu premade character key ('c1'..'c18'); falls back to role default */
+  charKey?: string;
   modelTier: ModelTier;
   currentTask: string | null;
   tokensUsed: number;

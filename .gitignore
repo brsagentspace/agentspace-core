@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Paid LimeZu assets - license forbids redistribution (public repo!)
+public/assets/limezu/

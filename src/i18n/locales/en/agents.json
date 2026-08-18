@@ -5,7 +5,18 @@
     "backend": "Backend Dev",
     "qa": "QA Engineer",
     "researcher": "Researcher",
+    "data": "Data Analyst",
     "ml": "ML Engineer"
+  },
+  "add_agent": {
+    "button": "Add Agent",
+    "title": "Add an agent",
+    "name_label": "Name",
+    "name_placeholder": "e.g. Nova",
+    "role_label": "Role",
+    "character_label": "Character",
+    "cancel": "Cancel",
+    "submit": "Place them"
   },
   "status": {
     "idle": "Idle",

@@ -6,6 +6,7 @@ import { MultiTerminalPanel } from './components/terminal/MultiTerminalPanel';
 import { RulesPanel } from './components/panels/RulesPanel';
 import { ObservabilityModal } from './components/panels/ObservabilityModal';
 import { SettingsModal } from './components/panels/SettingsModal';
+import { AddAgentModal } from './components/panels/AddAgentModal';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -13,14 +14,16 @@ const queryClient = new QueryClient();
 function App() {
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="app-container">
         {/* Header - Real TopBar */}
-        <TopBar 
-          onOpenTelemetry={() => setIsTelemetryOpen(true)} 
+        <TopBar
+          onOpenTelemetry={() => setIsTelemetryOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenAddAgent={() => setIsAddAgentOpen(true)}
         />
 
         {/* 2-Row Bento Box Workspace */}
@@ -68,9 +71,14 @@ function App() {
           onClose={() => setIsTelemetryOpen(false)}
         />
         
-        <SettingsModal 
+        <SettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+        />
+
+        <AddAgentModal
+          isOpen={isAddAgentOpen}
+          onClose={() => setIsAddAgentOpen(false)}
         />
       </div>
     </QueryClientProvider>
