@@ -55,6 +55,7 @@ export function createProject(name: string, blueprint: string, withStarterTeam: 
     blueprint,
     createdAt: new Date().toISOString(),
     lastOpenedAt: new Date().toISOString(),
+    demoMemory: withStarterTeam,
   };
   const starterTeam = withStarterTeam
     ? INITIAL_AGENTS.map(a => ({ ...a, id: `${meta.id}_${a.id}` }))

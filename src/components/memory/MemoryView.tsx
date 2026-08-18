@@ -11,12 +11,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JsonMemoryStore, agentColor } from '../../services/memory/MemoryStore';
+import { agentColor } from '../../services/memory/MemoryStore';
 import type { MemoryGraphData } from '../../services/memory/MemoryStore';
+import { loadProjectMemory } from '../../services/memory/projectMemory';
+import { useProjectStore } from '../../store/projectStore';
+import { useAgentSpaceStore } from '../../store';
+import { useMemoryJournalStore } from '../../store/memoryJournalStore';
 import { MemoryMapCanvas } from './MemoryMapCanvas';
 import './MemoryView.css';
-
-const store = new JsonMemoryStore();
 
 export function MemoryView() {
   const { t } = useTranslation('memory');
@@ -28,13 +30,24 @@ export function MemoryView() {
   const [timePct, setTimePct] = useState(100);
   const [focusTarget, setFocusTarget] = useState<{ id: string; nonce: number } | null>(null);
 
+  const projectId = useProjectStore(s => s.activeProjectId);
+  const demoMemory = useProjectStore(
+    s => s.projects.find(p => p.id === s.activeProjectId)?.demoMemory ?? true,
+  );
+  // Stable team key: ignores status churn, changes when members change.
+  const teamKey = useAgentSpaceStore(s => s.agents.map(a => `${a.id}:${a.name}`).join('|'));
+  const journalCount = useMemoryJournalStore(
+    s => (projectId ? (s.byProject[projectId]?.length ?? 0) : 0),
+  );
+
   useEffect(() => {
     let alive = true;
-    store.load()
+    const team = useAgentSpaceStore.getState().agents;
+    loadProjectMemory(projectId, team, demoMemory)
       .then(d => { if (alive) setData(d); })
       .catch(e => { if (alive) setError(String(e)); });
     return () => { alive = false; };
-  }, []);
+  }, [projectId, demoMemory, teamKey, journalCount]);
 
   const agentIds = useMemo(() => Object.keys(data?.agents ?? {}), [data]);
 

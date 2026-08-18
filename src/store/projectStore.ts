@@ -21,6 +21,8 @@ export interface ProjectMeta {
   blueprint: string;
   createdAt: string;
   lastOpenedAt: string;
+  /** Seed the memory map with the demo graph (set at creation) */
+  demoMemory?: boolean;
 }
 
 interface ProjectState {
