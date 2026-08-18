@@ -7,6 +7,8 @@ import { RulesPanel } from './components/panels/RulesPanel';
 import { ObservabilityModal } from './components/panels/ObservabilityModal';
 import { SettingsModal } from './components/panels/SettingsModal';
 import { AddAgentModal } from './components/panels/AddAgentModal';
+import { MemoryView } from './components/memory/MemoryView';
+import type { AppView } from './components/layout/TopBar';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -15,6 +17,7 @@ function App() {
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false);
+  const [view, setView] = useState<AppView>('office');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -24,10 +27,19 @@ function App() {
           onOpenTelemetry={() => setIsTelemetryOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenAddAgent={() => setIsAddAgentOpen(true)}
+          view={view}
+          onViewChange={setView}
         />
 
+        {/* Memory Map view replaces the whole workspace */}
+        {view === 'memory' && (
+          <div className="workspace" style={{ display: 'block' }}>
+            <MemoryView />
+          </div>
+        )}
+
         {/* 2-Row Bento Box Workspace */}
-        <div className="workspace">
+        <div className="workspace" style={view === 'memory' ? { display: 'none' } : undefined}>
           
           {/* Top Row: Office (Landscape Tilemap) */}
           <div className="panel office-column">

@@ -1,0 +1,19 @@
+{
+  "title": "Agent Memory Map",
+  "subtitle": "Clustered by agent — every node is a memory, every edge a [[link]]",
+  "tab_office": "Office",
+  "tab_memory": "Memory",
+  "stats": "{{nodes}} memories · {{edges}} links",
+  "indexed": "{{files}} files, {{chunks}} chunks indexed",
+  "search_placeholder": "search memories…",
+  "legend_title": "AGENT · CLICK = ONLY WHAT THEY KNOW",
+  "legend_all": "All agents",
+  "panel_agent": "Agent",
+  "panel_type": "Type",
+  "panel_valid_time": "Happened",
+  "panel_ingestion_time": "Recorded",
+  "panel_links": "Links",
+  "panel_empty": "Select a node to inspect a memory",
+  "loading": "Loading memory graph…",
+  "canvas_placeholder": "Memory map renders here (Phase 2)"
+}

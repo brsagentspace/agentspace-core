@@ -1,0 +1,19 @@
+{
+  "title": "Ajan Hafıza Haritası",
+  "subtitle": "Ajana göre kümelenmiş — her düğüm bir hafıza, her bağ bir [[link]]",
+  "tab_office": "Ofis",
+  "tab_memory": "Hafıza",
+  "stats": "{{nodes}} hafıza · {{edges}} bağ",
+  "indexed": "{{files}} dosya, {{chunks}} parça indeksli",
+  "search_placeholder": "hafıza ara…",
+  "legend_title": "AJAN · TIKLA = SADECE ONUN BİLDİKLERİ",
+  "legend_all": "Tüm ajanlar",
+  "panel_agent": "Ajan",
+  "panel_type": "Tür",
+  "panel_valid_time": "Gerçekleşme",
+  "panel_ingestion_time": "Kayıt",
+  "panel_links": "Bağlar",
+  "panel_empty": "Bir hafızayı incelemek için düğüm seç",
+  "loading": "Hafıza grafiği yükleniyor…",
+  "canvas_placeholder": "Hafıza haritası burada render edilecek (Faz 2)"
+}

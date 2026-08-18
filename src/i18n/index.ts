@@ -22,12 +22,14 @@ import enCommon from './locales/en/common.json';
 import enLayout from './locales/en/layout.json';
 import enAgents from './locales/en/agents.json';
 import enBlueprints from './locales/en/blueprints.json';
+import enMemory from './locales/en/memory.json';
 
 // ── Turkish locale files ───────────────────────────────────────
 import trCommon from './locales/tr/common.json';
 import trLayout from './locales/tr/layout.json';
 import trAgents from './locales/tr/agents.json';
 import trBlueprints from './locales/tr/blueprints.json';
+import trMemory from './locales/tr/memory.json';
 
 /** All registered locale resources, grouped by language code and namespace. */
 const RESOURCES = {
@@ -36,12 +38,14 @@ const RESOURCES = {
     layout: enLayout,
     agents: enAgents,
     blueprints: enBlueprints,
+    memory: enMemory,
   },
   tr: {
     common: trCommon,
     layout: trLayout,
     agents: trAgents,
     blueprints: trBlueprints,
+    memory: trMemory,
   },
 } as const;
 

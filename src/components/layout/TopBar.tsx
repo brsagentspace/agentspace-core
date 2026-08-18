@@ -1,16 +1,33 @@
+import type { CSSProperties } from 'react';
 import { Play, Activity, FolderGit2, Settings, Terminal, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
+
+export type AppView = 'office' | 'memory';
 
 interface TopBarProps {
   onOpenTelemetry: () => void;
   onOpenSettings: () => void;
   onOpenAddAgent: () => void;
+  view: AppView;
+  onViewChange: (view: AppView) => void;
 }
 
-export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent }: TopBarProps) {
+export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, view, onViewChange }: TopBarProps) {
   const activeEngine = useSettingsStore(state => state.activeEngine);
   const { t } = useTranslation('agents');
+  const { t: tm } = useTranslation('memory');
+
+  const tabStyle = (active: boolean): CSSProperties => ({
+    background: active ? '#241f38' : 'transparent',
+    color: active ? '#fff' : '#9090a2',
+    border: active ? '1px solid #8b5cf6' : '1px solid #2c2c3b',
+    borderRadius: 4,
+    padding: '4px 14px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  });
   
   return (
     <header className="topbar">
@@ -20,6 +37,16 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent }: TopB
         <h1 style={{ fontSize: 16, fontWeight: 700, color: '#f8f8fb', margin: 0, letterSpacing: 0.5 }}>
           AgentSpace
         </h1>
+      </div>
+
+      {/* View Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+        <button style={tabStyle(view === 'office')} onClick={() => onViewChange('office')}>
+          {tm('tab_office')}
+        </button>
+        <button style={tabStyle(view === 'memory')} onClick={() => onViewChange('memory')}>
+          {tm('tab_memory')}
+        </button>
       </div>
 
       {/* Blueprint Selector (Mock logic for now) */}
