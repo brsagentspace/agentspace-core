@@ -79,15 +79,44 @@ export function MultiTerminalPanel() {
     disposeTerminal(id);
   };
 
-  const addTerminal = () => {
-    if (zoomedId) setZoomedId(null);
-    const newId = createSession();
+  const appendToTree = (newId: string) => {
     setMosaicNodes(
       mosaicNodes === null
         ? newId
         : { type: 'split', direction: 'row', children: [mosaicNodes, newId], splitPercentages: [65, 35] },
     );
   };
+
+  const addTerminal = () => {
+    if (zoomedId) setZoomedId(null);
+    appendToTree(createSession());
+  };
+
+  // Office bridge: clicking an agent focuses (or creates) their terminal.
+  const focusRef = useRef({ sessions, mosaicNodes });
+  focusRef.current = { sessions, mosaicNodes };
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      const { agentId, name, statusColor } = (e as CustomEvent).detail as {
+        agentId: string; name: string; statusColor: string;
+      };
+      const existing = Object.values(focusRef.current.sessions).find(s => s.agentId === agentId);
+      if (existing) {
+        useTerminalStore.getState().setZoomedId(existing.id);
+        return;
+      }
+      const newId = useTerminalStore.getState().createSession({ agentId, title: name, statusColor });
+      const tree = focusRef.current.mosaicNodes;
+      useTerminalStore.getState().setMosaicNodes(
+        tree === null
+          ? newId
+          : { type: 'split', direction: 'row', children: [tree, newId], splitPercentages: [65, 35] },
+      );
+      useTerminalStore.getState().setZoomedId(newId);
+    };
+    window.addEventListener('agentspace:focus-terminal', onFocus);
+    return () => window.removeEventListener('agentspace:focus-terminal', onFocus);
+  }, []);
 
   const renderControls = (session: TerminalSession, path: MosaicPath): React.ReactNode[] => {
     const isZoomed = zoomedId === session.id;
