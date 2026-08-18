@@ -1,21 +1,22 @@
 /**
  * @file MultiTerminalPanel.tsx
- * @description Tiled terminal workspace (react-mosaic + xterm).
+ * @description Tiled terminal workspace (react-mosaic v7 + xterm).
  *
  * Terminal instances live in terminalRegistry (outside React) so mosaic
  * tree changes never destroy scrollback; panes only attach the terminal's
- * DOM element. Toolbar actions use lucide icons.
+ * DOM element. Toolbar: copy, split right/down, zoom (tmux-style), close.
  *
  * @module components/terminal
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Copy } from 'lucide-react';
-import { Mosaic, MosaicWindow } from 'react-mosaic-component';
+import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare } from 'lucide-react';
+import { Mosaic, MosaicWindow, createRemoveUpdate, updateTree } from 'react-mosaic-component';
+import type { MosaicNode, MosaicPath, MosaicDirection } from 'react-mosaic-component';
 import { useTerminalStore } from '../../store/terminalStore';
 import type { TerminalSession } from '../../store/terminalStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import { getOrCreateTerminal, attachTerminal } from './terminalRegistry';
+import { getOrCreateTerminal, attachTerminal, disposeTerminal } from './terminalRegistry';
 
 import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
@@ -44,7 +45,10 @@ function TerminalPane({ session }: { session: TerminalSession }) {
 }
 
 export function MultiTerminalPanel() {
-  const { sessions, mosaicNodes, setMosaicNodes } = useTerminalStore();
+  const {
+    sessions, mosaicNodes, zoomedId,
+    setMosaicNodes, setZoomedId, createSession, removeSession,
+  } = useTerminalStore();
   const activeEngine = useSettingsStore(s => s.activeEngine);
 
   const copySelection = (session: TerminalSession) => {
@@ -53,39 +57,113 @@ export function MultiTerminalPanel() {
     if (selection) void navigator.clipboard.writeText(selection);
   };
 
+  const splitPane = (id: string, path: MosaicPath, direction: MosaicDirection) => {
+    if (zoomedId) setZoomedId(null);
+    const newId = createSession();
+    const newNode: MosaicNode<string> = { type: 'split', direction, children: [id, newId] };
+    setMosaicNodes(
+      path.length === 0 && (mosaicNodes === id || mosaicNodes === null)
+        ? newNode
+        : updateTree(mosaicNodes!, [{ path, spec: { $set: newNode } }]),
+    );
+  };
+
+  const closePane = (id: string, path: MosaicPath) => {
+    if (zoomedId === id) setZoomedId(null);
+    if (path.length === 0) {
+      setMosaicNodes(null);
+    } else {
+      setMosaicNodes(updateTree(mosaicNodes!, [createRemoveUpdate(mosaicNodes!, path)]));
+    }
+    removeSession(id);
+    disposeTerminal(id);
+  };
+
+  const addTerminal = () => {
+    if (zoomedId) setZoomedId(null);
+    const newId = createSession();
+    setMosaicNodes(
+      mosaicNodes === null
+        ? newId
+        : { type: 'split', direction: 'row', children: [mosaicNodes, newId], splitPercentages: [65, 35] },
+    );
+  };
+
+  const renderControls = (session: TerminalSession, path: MosaicPath): React.ReactNode[] => {
+    const isZoomed = zoomedId === session.id;
+    return [
+      <div key="status" className="term-status-dot" style={{ background: session.statusColor }} />,
+      <button key="copy" className="term-action" title="Seçimi kopyala" onClick={() => copySelection(session)}>
+        <Copy size={13} />
+      </button>,
+      !isZoomed && (
+        <button key="split-r" className="term-action" title="Sağa böl" onClick={() => splitPane(session.id, path, 'row')}>
+          <SplitSquareHorizontal size={13} />
+        </button>
+      ),
+      !isZoomed && (
+        <button key="split-d" className="term-action" title="Aşağı böl" onClick={() => splitPane(session.id, path, 'column')}>
+          <SplitSquareVertical size={13} />
+        </button>
+      ),
+      <button
+        key="zoom"
+        className="term-action"
+        title={isZoomed ? 'Düzene dön' : 'Tam ekran (zoom)'}
+        onClick={() => setZoomedId(isZoomed ? null : session.id)}
+      >
+        {isZoomed ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+      </button>,
+      <button key="close" className="term-action" title="Kapat" onClick={() => closePane(session.id, path)}>
+        <X size={14} />
+      </button>,
+    ].filter(Boolean) as React.ReactNode[];
+  };
+
+  const sessionCount = Object.keys(sessions).length;
+  const value = zoomedId ?? mosaicNodes;
+
   return (
-    <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-      <Mosaic<string>
-        className="mosaic-agentspace"
-        renderTile={(id, path) => {
-          const session = sessions[id];
-          if (!session) return <div className="term-pane" />;
+    <div style={{ width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="term-strip">
+        <TerminalSquare size={13} />
+        <span>TERMİNALLER · {sessionCount}</span>
+        <button className="term-action" title="Yeni terminal" onClick={addTerminal}>
+          <Plus size={14} />
+        </button>
+      </div>
 
-          const controls: React.ReactNode[] = [
-            <div
-              key="status"
-              className="term-status-dot"
-              style={{ background: session.statusColor }}
-            />,
-            <button
-              key="copy"
-              className="term-action"
-              title="Seçimi kopyala"
-              onClick={() => copySelection(session)}
-            >
-              <Copy size={13} />
-            </button>,
-          ];
-
-          return (
-            <MosaicWindow<string> path={path} title={session.title} toolbarControls={controls}>
-              <TerminalPane session={session} />
-            </MosaicWindow>
-          );
-        }}
-        value={mosaicNodes}
-        onChange={setMosaicNodes}
-      />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {value === null ? (
+          <div className="term-empty">
+            <button className="term-empty-btn" onClick={addTerminal}>
+              <Plus size={14} /> Yeni terminal
+            </button>
+          </div>
+        ) : (
+          <Mosaic<string>
+            className="mosaic-agentspace"
+            renderTile={(id, path) => {
+              const session = sessions[id];
+              if (!session) return <div className="term-pane" />;
+              return (
+                <MosaicWindow<string>
+                  path={path}
+                  title={session.title}
+                  toolbarControls={renderControls(session, path)}
+                >
+                  <TerminalPane session={session} />
+                </MosaicWindow>
+              );
+            }}
+            value={value}
+            onChange={(next) => {
+              // Ignore layout churn while zoomed — the saved tree stays intact.
+              if (!zoomedId) setMosaicNodes(next);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
