@@ -2,6 +2,7 @@
 // Exposes CLI engine commands to the frontend via Tauri IPC.
 
 mod cli_engine;
+mod pty;
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
@@ -107,11 +108,16 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(ActiveEngine(Mutex::new("claude".to_string())))
+        .manage(pty::PtyManager::default())
         .invoke_handler(tauri::generate_handler![
             detect_cli_engines,
             run_cli_prompt,
             set_active_engine,
             get_active_engine,
+            pty::pty_spawn,
+            pty::pty_write,
+            pty::pty_resize,
+            pty::pty_kill,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentSpace");
