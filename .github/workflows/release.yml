@@ -1,65 +1,49 @@
-name: Release & Cross-Platform Desktop Build
+name: Release (Tauri)
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch: {}
 
 jobs:
-  build-tauri:
-    name: Build Tauri Desktop (${{ matrix.platform }})
-    permissions:
-      contents: write
+  build:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
+          - platform: macos-latest
             args: '--target aarch64-apple-darwin'
-          - platform: 'windows-latest'
-            args: ''
-          - platform: 'ubuntu-22.04'
-            args: ''
 
     runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: aarch64-apple-darwin
 
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
+      - uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: src-tauri
 
-      - name: Install Linux Dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
+      - run: npm ci
 
-      - name: Install NPM Dependencies
-        run: npm ci
-
-      - name: Build Application Bundle
-        uses: tauri-apps/tauri-action@v0
+      # Tag push -> creates a draft GitHub release with the bundles.
+      # workflow_dispatch -> build-only sanity run (no release).
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'AgentSpace Desktop ${{ github.ref_name }}'
-          releaseBody: 'See changelog for detailed multi-agent simulation & knowledge graph updates.'
-          releaseDraft: false
-          prerelease: false
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('AgentSpace {0}', github.ref_name) || '' }}
+          releaseDraft: true
           args: ${{ matrix.args }}
