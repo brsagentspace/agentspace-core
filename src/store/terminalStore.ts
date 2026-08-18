@@ -34,6 +34,15 @@ interface TerminalState {
   removeSession: (id: string) => void;
   /** Restores the default workspace (used when switching projects). */
   resetToDefault: () => void;
+  /** Restores a previously saved workspace snapshot (project switching). */
+  restoreSnapshot: (snap: TerminalSnapshot) => void;
+}
+
+/** Serializable terminal workspace state, saved per project. */
+export interface TerminalSnapshot {
+  sessions: Record<string, TerminalSession>;
+  mosaicNodes: MosaicNode<string> | null;
+  nextIndex: number;
 }
 
 const defaultSessions = (): Record<string, TerminalSession> => ({
@@ -90,5 +99,13 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       mosaicNodes: defaultTree(),
       zoomedId: null,
       nextIndex: 1,
+    }),
+
+  restoreSnapshot: (snap) =>
+    set({
+      sessions: snap.sessions,
+      mosaicNodes: snap.mosaicNodes,
+      zoomedId: null,
+      nextIndex: snap.nextIndex,
     }),
 }));
