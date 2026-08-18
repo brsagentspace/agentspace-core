@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Play, Activity, FolderGit2, Settings, Terminal, UserPlus } from 'lucide-react';
+import { Play, Activity, FolderGit2, Settings, Terminal, UserPlus, BookOpenCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -9,14 +9,16 @@ interface TopBarProps {
   onOpenTelemetry: () => void;
   onOpenSettings: () => void;
   onOpenAddAgent: () => void;
+  onToggleRules: () => void;
   view: AppView;
   onViewChange: (view: AppView) => void;
 }
 
-export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, view, onViewChange }: TopBarProps) {
+export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onToggleRules, view, onViewChange }: TopBarProps) {
   const activeEngine = useSettingsStore(state => state.activeEngine);
   const { t } = useTranslation('agents');
   const { t: tm } = useTranslation('memory');
+  const { t: tl } = useTranslation('layout');
 
   const tabStyle = (active: boolean): CSSProperties => ({
     background: active ? '#241f38' : 'transparent',
@@ -82,6 +84,18 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, view, 
           }}
         >
           <UserPlus size={14} style={{ color: '#67e8f9' }} /> {t('add_agent.button')}
+        </button>
+
+        {/* Blueprint Rules Drawer Toggle */}
+        <button
+          onClick={onToggleRules}
+          style={{
+            background: '#191922', color: '#f8f8fb', border: '1px solid #2c2c3b', borderRadius: 4,
+            padding: '4px 12px', fontSize: 12, fontWeight: 600, display: 'flex',
+            alignItems: 'center', gap: 6, cursor: 'pointer'
+          }}
+        >
+          <BookOpenCheck size={14} style={{ color: '#34d399' }} /> {tl('top_bar.rules_button')}
         </button>
       </div>
 

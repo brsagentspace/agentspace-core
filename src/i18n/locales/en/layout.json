@@ -5,7 +5,8 @@
     "project_placeholder": "—",
     "blueprint_label": "Blueprint",
     "blueprint_placeholder": "Select...",
-    "settings_tooltip": "Settings"
+    "settings_tooltip": "Settings",
+    "rules_button": "Rules"
   },
   "status_bar": {
     "agents_label": "Agents",
