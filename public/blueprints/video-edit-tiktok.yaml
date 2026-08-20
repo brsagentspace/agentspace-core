@@ -1,0 +1,139 @@
+# AgentSpace Blueprint — TikTok Canlı Yayın Video Edit (Remotion)
+# Miras: _base-media.yaml (medya evrensel kuralları geçerli; yazılım kuralları DEĞİL)
+# Kaynak bilgi tabanı: ~/tiktok-edit/docs (05-kurallar-ve-dersler, 08-level-atlama, 09-yayin-ozeti)
+
+id: "video-edit-tiktok"
+version: "1.0.0"
+name: "TikTok Canlı Yayın Video Edit"
+project_type: "media"
+domain: "media"
+inherits: "_base-media"
+
+description: |
+  TikTok canlı yayın kayıtlarından (hediye / seviye atlama / yayın özeti) müşteri için
+  kısa video üreten Remotion + ffmpeg pipeline'ı. Üç iş tipi vardır ve efekt dilleri
+  birbirinden farklıdır: VİTRİN (tek klip, orijinal ses), LEVEL ATLAMA / SARAY FORMÜLÜ
+  (AI sahne + hediye şelalesi + müzik kilidi) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv).
+  İş tipi baştan netleştirilmeden kurgu başlamaz.
+
+tags: ["video", "remotion", "ffmpeg", "tiktok", "capcut", "edit", "recap"]
+
+# ─────────────────────────────────────────────
+# ÜRETİM MİMARİSİ
+# ─────────────────────────────────────────────
+architecture:
+  pattern: "Analiz ➔ Plan (JSON) ➔ Remotion/ffmpeg Render ➔ Kare+dB Doğrulama ➔ Müşteri Onayı"
+  description: |
+    1) detect.py / gift_scan ile sinyal tespiti, kontakt föyü ile GÖZLE sınıflandırma.
+    2) Segment tablosu (t0, t1, tip, hız) plan JSON'una yazılır — render bu plandan üretilir.
+    3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
+    4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
+  work_types:
+    vitrin: "Tek klip, sentetik banner gerçeğinin üstüne, SFX yok, orijinal ses"
+    level_up: "Saray formülü: AI sahne(ler) + hediye şelalesi, 3 müzik kilidi, kükreme senkronu, elmas patlatma"
+    recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız"
+
+# ─────────────────────────────────────────────
+# ONAYLANMIŞ KURALLAR (müşteri geri bildirimiyle kesinleşti)
+# ─────────────────────────────────────────────
+code_standards:
+  principles:
+    - "TEK kutu kuralı: sentetik sayaç bandı videodaki GERÇEK banner'ın birebir replikası olur ve onun üstüne oturur"
+    - "İlk klip dokunulmaz: sınır kare kare doğrulanır; hızlandırma kararma/geçiş İÇİNDE başlar"
+    - "Alev = filaman: keskin beyaz-sarı çekirdek + dar bant, blur yalnız dış halede"
+    - "Telefon = gerçek cihaz: koyu bezel + derin gölge + zemin gölgesi + cam yansıması"
+    - "Bitişler: aydınlanma (ışık sarar) veya karanlık (gölgeler kapanır); ses her zaman görüntüyle söner"
+    - "Sayaç okunurluğu: kameradan bağımsız sabit katman; uzun unicode isimlerde font küçült"
+    - "Müzik videoya tam oturur: ya sona kilitle ya süreyi eşitle — ortada müziksiz kuyruk yok"
+    - "RECAP: sadece hediyeler — davet paneli, bağlantı diyaloğu, istek listesi, klavye TEK KARE görünmez"
+    - "RECAP: değer → hız (pahalı 1.3x, spam 2.6x), sıra kronolojik, final en dramatik hediyeye kilitlenir"
+    - "RECAP crop: liderlik tablosu + yayıncı adı kadrajda kalır; üstten yalnız durum çubuğu atılır"
+    - "Level videosu sınıfı baştan sorulur: NORMAL (tek AI sahne + bant zoom) mı BÜYÜK (elmas patlatma) mı"
+
+  forbidden:
+    - "Karalama: UI gizlemek için yarı saydam yama — ya bezel/kırpma gibi doğal çözüm ya hiç"
+    - "Sağa-sola pan bitişi (reddedildi)"
+    - "İkinci/farklı görünümlü sayaç kutusu (reddedildi)"
+    - "Vitrin formülünde SFX eklemek — yalnız orijinal ses"
+    - "RECAP'te kamera efekti: shake, zoom, whip, punch-in, RGB ayrışması, titreme"
+    - "RECAP'te jenerik ses: Universe alım sesi, money gun, boom/whoosh/shimmer — kaynakta yoksa SESSİZ"
+    - "Agresif üst crop (ör. 330px) — liderlik tablosunu götürür"
+    - "Tek-kare föy ile aday sınıflandırma — aday başına 8 karelik şerit zorunlu"
+    - "Föy örneklemesiyle panel temizliği varsaymak — panel_scan taraması zorunlu"
+
+# ─────────────────────────────────────────────
+# TEKNİK DERSLER (yaşanmış hatalar — tekrar etme)
+# ─────────────────────────────────────────────
+lessons:
+  remotion:
+    - "sframe dersi: startFrom ile kaydırırken spring'ler kare bazlı → sframe = frame + START*fps"
+    - "camX clamp: pan aralığını kare tabanlı [T_PAN,…] yap, 0'dan başlat"
+    - "Loop volume: <Audio loop> volume callback her turda sıfırlanır → zarfı kompozisyon zamanından hesapla"
+    - "interpolate monotonluk: sed ile sabit güncelledikten sonra grep'le doğrula"
+  ffmpeg:
+    - "concat AAC ses kayması: segment bazlı ses, tek geçişte birleştir"
+    - "add-audio süresi kaynaktan uzun olamaz"
+    - "yt-dlp çıktısı AV1/Opus olabilir → H.264/AAC'ye çevir"
+  workflow:
+    - "QuickTime stale dosya: aynı isme render etme, yeni isimli kopya aç"
+    - "Paralel oturum: hafıza dosyası değiştiyse önce dosya sistemini oku, var olan işi ezme"
+    - "Yanlış pozitif renk metriği: turuncu yele 'kırmızı banner' sanıldı — metrik + görsel şerit birlikte"
+
+# ─────────────────────────────────────────────
+# QA KAPILARI (testing = doğrulama)
+# ─────────────────────────────────────────────
+testing:
+  framework: "ffmpeg frame extract + volumedetect + panel_scan.py"
+  rules:
+    - "Teslim öncesi 3 kontrol noktası: giriş (ilk 1s), geçişler, kuyruk (son 1s — fade altında diyalog sızıntısı yok)"
+    - "RECAP: panel_scan.py ile tam tarama; kirli segment trim/at, tekrar tara"
+    - "Level/Saray: kükreme/drop senkronu kare numarasıyla doğrulanır"
+    - "Müşteri WhatsApp sesli geri bildirimi whisper ile çözülür, madde madde kural dokümanına işlenir"
+
+# ─────────────────────────────────────────────
+# AJAN ROLLERİ
+# ─────────────────────────────────────────────
+agent_roles:
+  analyst:
+    count: 1
+    model_tier: 1
+    color: "blue"
+    responsibilities:
+      - "Kaynak analizi: proxy + mono ses çıkar, sinyal tespiti (detect.py / gift_scan)"
+      - "Kontakt föyü üret, adayları GÖZLE sınıflandır, segment tablosunu yaz"
+      - "İş tipini (vitrin / level / recap) ve level sınıfını (NORMAL / BÜYÜK) netleştir"
+  editor:
+    count: 1
+    model_tier: 1
+    color: "yellow"
+    responsibilities:
+      - "Plan JSON'undan Remotion kompozisyonunu kur (AI sahne, banner, zoom, geçişler)"
+      - "Recap'te yalnız ffmpeg ile kes/hızlandır/birleştir"
+      - "Her render'ı yeni isimle, mutlak yolla üret"
+  sound:
+    count: 1
+    model_tier: 2
+    color: "green"
+    responsibilities:
+      - "Müzik kilidi matematiği (sona kilitle / süreyi eşitle), ducking, kükreme pencereleri"
+      - "-90 dB kontrolü, AAC kayması, codec uyumu"
+      - "SFX YOK kuralını korur — kaynakta yoksa sessiz teslim"
+  qa:
+    count: 1
+    model_tier: 2
+    color: "red"
+    responsibilities:
+      - "Kare + dB doğrulama, panel_scan taraması, sınır kareleri"
+      - "Müşteri kurallarına karşı kontrol listesi (5 altın kural / 9 onaylı kural)"
+      - "Geri bildirimi kural dokümanına işle"
+
+# ─────────────────────────────────────────────
+# BAŞLANGIÇ BAĞLAMI (ajan sistem promptu)
+# ─────────────────────────────────────────────
+initial_feed:
+  - "Sen TikTok canlı yayın kliplerinden müşteri videosu üreten bir kurgu ekibisin. Araçlar: ffmpeg, Remotion, python (detect.py, beats.py, panel_scan.py)."
+  - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ilgili iş tipinin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti) oku."
+  - "Önce iş tipini sor: VİTRİN / LEVEL (NORMAL mi BÜYÜK mü) / RECAP. Her tipin efekt dili farklıdır, karıştırma."
+  - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
+  - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
+  - "Kaynakta olmayan sesi dışarıdan ekleme. Sessiz teslim kabul edilebilir, yanlış ses kabul edilmez."

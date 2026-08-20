@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Sparkles, X, ShieldAlert } from 'lucide-react';
+import { Search, Sparkles, X, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { useAgentSpaceStore } from '../../store';
 import { resolveBlueprint } from '../../lib/blueprintEngine';
 import { ragPipeline } from '../../services/rag/RetrievalCascade';
@@ -192,6 +192,25 @@ export function RulesPanel() {
               </section>
             )}
 
+            {/* Approved principles (media blueprints lean on these) */}
+            {blueprint.code_standards?.principles &&
+              blueprint.code_standards.principles.length > 0 && (
+                <section className="rules-section">
+                  <h4 className="rules-section__title">
+                    <CheckCircle2 size={12} aria-hidden="true" />
+                    <span>{tBlueprints('panel.section_principles')}</span>
+                  </h4>
+                  <ul className="rules-list">
+                    {blueprint.code_standards.principles.map((rule, idx) => (
+                      <li key={idx} className="rules-list__item">
+                        <span className="rules-list__icon" aria-hidden="true">✔</span>
+                        <span>{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
             {/* Strict Forbidden Rules */}
             {blueprint.code_standards?.forbidden &&
               blueprint.code_standards.forbidden.length > 0 && (
@@ -235,18 +254,28 @@ export function RulesPanel() {
             {/* Testing Requirements */}
             {blueprint.testing && (
               <section className="rules-section">
-                <h4 className="rules-section__title">Testing & Quality Gates</h4>
-                <div className="rules-testing-row">
-                  <span className="rules-testing-label">Coverage Floor:</span>
-                  <span className="rules-testing-value">
-                    {blueprint.testing.coverage_minimum || 70}%
-                  </span>
-                </div>
+                <h4 className="rules-section__title">{tBlueprints('panel.section_testing')}</h4>
+                {blueprint.testing.coverage_minimum !== undefined && (
+                  <div className="rules-testing-row">
+                    <span className="rules-testing-label">Coverage Floor:</span>
+                    <span className="rules-testing-value">{blueprint.testing.coverage_minimum}%</span>
+                  </div>
+                )}
                 {blueprint.testing.framework && (
                   <div className="rules-testing-row">
                     <span className="rules-testing-label">Framework:</span>
                     <span className="rules-testing-value">{blueprint.testing.framework}</span>
                   </div>
+                )}
+                {blueprint.testing.rules && blueprint.testing.rules.length > 0 && (
+                  <ul className="rules-list">
+                    {blueprint.testing.rules.map((rule, idx) => (
+                      <li key={idx} className="rules-list__item">
+                        <span className="rules-list__icon" aria-hidden="true">•</span>
+                        <span>{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </section>
             )}

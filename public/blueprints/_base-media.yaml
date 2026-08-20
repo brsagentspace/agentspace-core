@@ -1,0 +1,65 @@
+# AgentSpace Blueprint — Medya İşleri Evrensel Temel Kurallar
+# Video/ses/görsel üretim blueprint'leri bu dosyayı miras alır (_base-media.yaml).
+# _base.yaml'ın yazılım kuralları (coverage, lint, conventional commits) BURADA GEÇERSİZDİR.
+
+id: "_base-media"
+version: "1.0.0"
+domain: "media"
+description: "Tüm medya (video / ses / görsel) üretim işlerinde geçerli evrensel standartlar"
+
+# ─────────────────────────────────────────────
+# KAYNAK VE ÇIKTI DİSİPLİNİ
+# ─────────────────────────────────────────────
+asset_discipline:
+  principles:
+    - "Kaynak dosyaya asla yazılmaz — her işlem kopya/proxy üzerinde, kaynak salt-okunur kalır"
+    - "Her render yeni isim alır (v1, v2 …) — aynı isme üzerine render yasak (açık oynatıcılar bozulur)"
+    - "Script ve render komutlarında MUTLAK yol kullanılır — uzun oturumda cwd kayar"
+    - "Ağır ara dosyalar (proxy, kesim, wav) iş klasöründe tutulur, asla repo'ya girmez"
+    - "Teslim edilen çıktı + onu üreten plan/JSON birlikte saklanır (yeniden üretilebilirlik)"
+
+  forbidden:
+    - "Müşteri videosu, ekran kaydı veya kişisel verisi public repoya commit edilemez"
+    - "İnternetten jenerik SFX/müzik indirip müşteri işine eklemek — kaynakta yoksa sessiz teslim"
+    - "Lisansı belirsiz font, görsel, ses kullanımı"
+    - "Onaysız yayın — müşteri onayı olmadan çıktı paylaşılmaz"
+
+# ─────────────────────────────────────────────
+# DOĞRULAMA (yazılımdaki 'test'in karşılığı)
+# ─────────────────────────────────────────────
+testing:
+  rules:
+    - "Her render sunulmadan önce KARE (frame extract) + dB (volumedetect) ile doğrulanır; 'komut çalıştı' doğrulama sayılmaz"
+    - "Kaynak ses var mı kontrolü (-90 dB testi) İLK iştir"
+    - "Sınır/kesim noktaları kare kare doğrulanır — iç kesme gerçek sınır değildir"
+    - "Referans metrik + görsel şerit birlikte okunur; tek metrikle karar verilmez"
+    - "Codec uyumu teslim öncesi kontrol edilir (AV1/Opus → H.264/AAC)"
+
+# ─────────────────────────────────────────────
+# MÜŞTERİ ONAY DÖNGÜSÜ
+# ─────────────────────────────────────────────
+approval_loop:
+  rules:
+    - "Müşteri 'bozuldu' dediğinde önce TEŞHİS (kare çıkar, ölç), sonra düzeltme — aynı yöntemde ısrar etme"
+    - "Her geri bildirim maddesi projenin kural dokümanına işlenir; sonraki iş o kurallarla başlar"
+    - "Reddedilen yaklaşımlar 'reddedildi' diye kaydedilir — yeniden önerilmez"
+    - "Onaylı çıktı 'ONAYLI' etiketiyle ve tarihiyle hafızaya yazılır"
+    - "Remote/paylaşılan şeylere yazmadan önce onay; lokal denemeler scratch klasörüne"
+
+# ─────────────────────────────────────────────
+# HAFIZA / DOKÜMANTASYON
+# ─────────────────────────────────────────────
+documentation:
+  required_files:
+    - "docs/ → konu başına tek markdown, [[wikilink]] çapraz referanslı (hafıza haritasına yüklenir)"
+    - "Kurallar ve dersler ayrı bölümlerde: 'Onaylanmış kurallar' (Decision) / 'Dersler' (Lesson)"
+    - "Müşteri başına ayrı not: tercih, yasaklar, onaylı çıktılar"
+
+# ─────────────────────────────────────────────
+# VERSİYONLAMA (hafif)
+# ─────────────────────────────────────────────
+version_control:
+  rules:
+    - "Repo'ya yalnızca bilgi tabanı, script ve şablonlar girer"
+    - ".gitignore: *.mp4, *.mov, *.wav, *.aac, work/, models/ — büyük ikili dosyalar dışarıda"
+    - "Commit mesajı işi anlatır: 'AmoRecap v2: panel QA sonrası 5 segment trim'"

@@ -19,11 +19,17 @@
     "name": "ML Pipeline",
     "description": "Python ML/AI pipeline with PyTorch & MLflow"
   },
+  "video_edit_tiktok": {
+    "name": "TikTok Live Video Edit",
+    "description": "Gift / level-up / recap videos with Remotion + ffmpeg"
+  },
   "panel": {
     "active_rules_title": "Active Rules",
     "section_architecture": "Architecture",
     "section_code_standards": "Code Standards",
     "section_forbidden": "Forbidden",
-    "section_agents": "Agent Roles"
+    "section_agents": "Agent Roles",
+    "section_principles": "Approved Principles",
+    "section_testing": "Testing & Quality Gates"
   }
 }
