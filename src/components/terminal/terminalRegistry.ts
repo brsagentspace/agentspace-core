@@ -14,7 +14,12 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import type { TerminalSession } from '../../store/terminalStore';
-import { activeProjectRootPath } from '../../store/projectStore';
+import { activeProject, activeProjectRootPath } from '../../store/projectStore';
+import { useAgentSpaceStore } from '../../store';
+import { resolveBlueprint } from '../../lib/blueprintEngine';
+import {
+  buildAgentBrief, buildAgentEnv, engineLaunchCommand, type BriefContext,
+} from '../../services/agentBrief';
 
 /** True when running inside the Tauri shell (real PTY available). */
 const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -68,19 +73,41 @@ async function ensurePtyListeners(): Promise<void> {
   });
 }
 
+/**
+ * Collects the Space / agent / blueprint context for a session. Returns null
+ * outside a project; a blueprint that fails to resolve degrades to a brief
+ * without the rules block instead of blocking the terminal.
+ */
+async function briefContextFor(session: TerminalSession): Promise<BriefContext | null> {
+  const project = activeProject();
+  if (!project) return null;
+  const team = useAgentSpaceStore.getState().agents;
+  const agent = team.find(a => a.id === session.agentId) ?? null;
+  const blueprint = await resolveBlueprint(project.blueprint).catch(() => null);
+  return { project, agent, team, blueprint };
+}
+
 async function connectPty(session: TerminalSession, entry: RegistryEntry): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core');
   await ensurePtyListeners();
+  const ctx = await briefContextFor(session);
   await invoke('pty_spawn', {
     id: session.id,
     cols: entry.term.cols || 80,
     rows: entry.term.rows || 24,
     cwd: activeProjectRootPath(),
+    env: ctx ? buildAgentEnv(ctx) : null,
+    brief: ctx ? buildAgentBrief(ctx) : null,
   });
   entry.term.onData((data) => { void invoke('pty_write', { id: session.id, data }); });
   entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: session.id, cols, rows }); });
   if (session.command) {
-    void invoke('pty_write', { id: session.id, data: `${session.command}\n` });
+    // Agent sessions store the bare engine name; claude additionally
+    // ingests the brief as an appended system prompt.
+    const launch = session.engine && session.command === session.engine
+      ? engineLaunchCommand(session.engine, ctx)
+      : session.command;
+    void invoke('pty_write', { id: session.id, data: `${launch}\n` });
   }
 }
 
@@ -109,6 +136,12 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
   term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${engineLabel}] bağlı.\x1b[0m`);
   const cwd = activeProjectRootPath();
   if (cwd) term.writeln(`\x1b[38;2;144;144;162mÇalışma klasörü: ${cwd}\x1b[0m`);
+  const project = activeProject();
+  if (project) {
+    const agent = useAgentSpaceStore.getState().agents.find(a => a.id === session.agentId);
+    const who = agent ? ` · ajan ${agent.name} (${agent.role})` : '';
+    term.writeln(`\x1b[38;2;144;144;162mBağlam: Space "${project.name}"${who} · blueprint ${project.blueprint}\x1b[0m`);
+  }
 
   const entry = { term, fit };
   entries.set(session.id, entry);

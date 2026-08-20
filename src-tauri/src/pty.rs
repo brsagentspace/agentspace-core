@@ -7,6 +7,7 @@ use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize}
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
@@ -14,6 +15,8 @@ pub struct PtySession {
     master: Box<dyn MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     child: Box<dyn Child + Send + Sync>,
+    /// Agent brief handed to the CLI engine (removed when the session dies).
+    brief_path: Option<PathBuf>,
 }
 
 #[derive(Default)]
@@ -21,6 +24,23 @@ pub struct PtyManager(pub Mutex<HashMap<String, PtySession>>);
 
 fn default_shell() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+}
+
+/// Session ids come from the frontend; keep the brief file name boring.
+fn safe_file_stem(id: &str) -> String {
+    id.chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .collect()
+}
+
+/// Writes the agent brief to `$TMPDIR/agentspace/briefs/<id>.md` and returns
+/// its path. The CLI engine reads it via `$AGENTSPACE_BRIEF`.
+fn write_brief(id: &str, brief: &str) -> Result<PathBuf, String> {
+    let dir = std::env::temp_dir().join("agentspace").join("briefs");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join(format!("{}.md", safe_file_stem(id)));
+    std::fs::write(&path, brief).map_err(|e| e.to_string())?;
+    Ok(path)
 }
 
 #[tauri::command]
@@ -31,6 +51,8 @@ pub fn pty_spawn(
     cols: u16,
     rows: u16,
     cwd: Option<String>,
+    env: Option<HashMap<String, String>>,
+    brief: Option<String>,
 ) -> Result<(), String> {
     let mut sessions = state.0.lock().map_err(|e| e.to_string())?;
     if sessions.contains_key(&id) {
@@ -43,6 +65,18 @@ pub fn pty_spawn(
 
     let mut cmd = CommandBuilder::new(default_shell());
     cmd.arg("-l");
+    // Space / agent context for whatever runs inside the shell.
+    for (key, value) in env.unwrap_or_default() {
+        cmd.env(key, value);
+    }
+    let brief_path = match brief {
+        Some(text) => {
+            let path = write_brief(&id, &text)?;
+            cmd.env("AGENTSPACE_BRIEF", path.as_os_str());
+            Some(path)
+        }
+        None => None,
+    };
     // Space working folder → shell cwd. A missing folder falls back to the
     // user's home so the pane still opens; the frontend is told why.
     if let Some(dir) = cwd {
@@ -82,7 +116,7 @@ pub fn pty_spawn(
         let _ = reader_app.emit("pty-exit", json!({ "id": reader_id }));
     });
 
-    sessions.insert(id, PtySession { master: pty.master, writer, child });
+    sessions.insert(id, PtySession { master: pty.master, writer, child, brief_path });
     Ok(())
 }
 
@@ -108,6 +142,9 @@ pub fn pty_kill(state: State<PtyManager>, id: String) -> Result<(), String> {
     let mut sessions = state.0.lock().map_err(|e| e.to_string())?;
     if let Some(mut session) = sessions.remove(&id) {
         let _ = session.child.kill();
+        if let Some(path) = session.brief_path.take() {
+            let _ = std::fs::remove_file(path);
+        }
     }
     Ok(())
 }
