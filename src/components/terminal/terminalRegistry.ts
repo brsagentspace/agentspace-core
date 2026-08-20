@@ -7,6 +7,11 @@
  * attach/detach the terminal's DOM element; the instance (and its buffer)
  * survives until the session is explicitly disposed.
  *
+ * Entries are keyed per Space (`<projectId>__<sessionId>`), so switching
+ * Spaces merely detaches a Space's terminals: their PTYs, CLI processes and
+ * scrollback keep running in the background and are re-attached untouched
+ * when the Space is opened again.
+ *
  * @module components/terminal
  */
 
@@ -14,7 +19,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { useTerminalStore, type TerminalSession } from '../../store/terminalStore';
-import { activeProject, activeProjectRootPath } from '../../store/projectStore';
+import { activeProject, activeProjectRootPath, useProjectStore } from '../../store/projectStore';
 import { useAgentSpaceStore } from '../../store';
 import { resolveBlueprint } from '../../lib/blueprintEngine';
 import {
@@ -55,7 +60,36 @@ interface RegistryEntry {
   fit: FitAddon;
 }
 
+/** Keyed by `ptyKey(projectId, sessionId)`. */
 const entries = new Map<string, RegistryEntry>();
+
+const KEY_SEP = '__';
+
+/** Registry / PTY id for a pane — Space-scoped, since pane ids repeat across Spaces. */
+function ptyKey(projectId: string, sessionId: string): string {
+  return `${projectId}${KEY_SEP}${sessionId}`;
+}
+
+function currentProjectId(): string {
+  return activeProject()?.id ?? 'none';
+}
+
+/** Stores the Claude id on the pane, whichever Space it now belongs to. */
+function rememberClaudeSessionId(projectId: string, sessionId: string, claudeSessionId: string): void {
+  if (currentProjectId() === projectId) {
+    useTerminalStore.getState().setClaudeSessionId(sessionId, claudeSessionId);
+    return;
+  }
+  // The Space was switched away while the PTY was still booting — patch its saved snapshot.
+  const store = useProjectStore.getState();
+  const snap = store.terminalByProject[projectId];
+  const session = snap?.sessions[sessionId];
+  if (!snap || !session || session.claudeSessionId === claudeSessionId) return;
+  store.saveTerminal(projectId, {
+    ...snap,
+    sessions: { ...snap.sessions, [sessionId]: { ...session, claudeSessionId } },
+  });
+}
 
 // ── Tauri PTY bridge ─────────────────────────────────────────────────────────
 // One global event listener routes pty-output chunks to the owning terminal.
@@ -88,21 +122,21 @@ async function briefContextFor(session: TerminalSession): Promise<BriefContext |
   return { project, agent, team, blueprint };
 }
 
-async function connectPty(session: TerminalSession, entry: RegistryEntry): Promise<void> {
+async function connectPty(session: TerminalSession, entry: RegistryEntry, projectId: string, key: string): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core');
   await ensurePtyListeners();
   const ctx = await briefContextFor(session);
   const cwd = activeProjectRootPath();
   await invoke('pty_spawn', {
-    id: session.id,
+    id: key,
     cols: entry.term.cols || 80,
     rows: entry.term.rows || 24,
     cwd,
     env: ctx ? buildAgentEnv(ctx) : null,
     brief: ctx ? buildAgentBrief(ctx) : null,
   });
-  entry.term.onData((data) => { void invoke('pty_write', { id: session.id, data }); });
-  entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: session.id, cols, rows }); });
+  entry.term.onData((data) => { void invoke('pty_write', { id: key, data }); });
+  entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: key, cols, rows }); });
   if (session.command) {
     // Agent sessions store the bare engine name; claude additionally
     // ingests the brief as an appended system prompt and keeps its
@@ -111,7 +145,7 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
     let launch = session.command;
     if (isEngine && session.engine === 'claude') {
       const plan = await planClaudeLaunch(cwd, session.claudeSessionId);
-      useTerminalStore.getState().setClaudeSessionId(session.id, plan.sessionId);
+      rememberClaudeSessionId(projectId, session.id, plan.sessionId);
       launch = engineLaunchCommand('claude', ctx, plan);
       entry.term.writeln(
         plan.mode === 'resume'
@@ -121,7 +155,7 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
     } else if (isEngine) {
       launch = engineLaunchCommand(session.engine!, ctx);
     }
-    void invoke('pty_write', { id: session.id, data: `${launch}\n` });
+    void invoke('pty_write', { id: key, data: `${launch}\n` });
   }
 }
 
@@ -130,7 +164,9 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
  * first request.
  */
 export function getOrCreateTerminal(session: TerminalSession, activeEngine: string): RegistryEntry {
-  const existing = entries.get(session.id);
+  const projectId = currentProjectId();
+  const key = ptyKey(projectId, session.id);
+  const existing = entries.get(key);
   if (existing) return existing;
 
   const term = new Terminal({
@@ -162,11 +198,11 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
   }
 
   const entry = { term, fit };
-  entries.set(session.id, entry);
+  entries.set(key, entry);
 
   if (IS_TAURI) {
     // Real shell via the Tauri PTY bridge.
-    void connectPty(session, entry).catch((err) => {
+    void connectPty(session, entry, projectId, key).catch((err) => {
       term.writeln(`\x1b[38;2;248;113;113mPTY başlatılamadı: ${String(err)}\x1b[0m`);
     });
   } else {
@@ -194,27 +230,42 @@ export function attachTerminal(entry: RegistryEntry, container: HTMLElement): vo
   requestAnimationFrame(() => entry.fit.fit());
 }
 
-function killPty(sessionId: string): void {
+function killPty(key: string): void {
   if (!IS_TAURI) return;
   void import('@tauri-apps/api/core').then(({ invoke }) =>
-    invoke('pty_kill', { id: sessionId }).catch(() => undefined),
+    invoke('pty_kill', { id: key }).catch(() => undefined),
   );
 }
 
-/** Permanently destroys a session's terminal (called when the session is closed). */
-export function disposeTerminal(sessionId: string): void {
-  const entry = entries.get(sessionId);
+function disposeKey(key: string): void {
+  const entry = entries.get(key);
   if (!entry) return;
   entry.term.dispose();
-  entries.delete(sessionId);
-  killPty(sessionId);
+  entries.delete(key);
+  killPty(key);
 }
 
-/** Destroys every live terminal (used when switching projects). */
-export function disposeAllTerminals(): void {
-  entries.forEach((entry, id) => {
-    entry.term.dispose();
-    killPty(id);
-  });
-  entries.clear();
+/** Permanently destroys a pane's terminal in the open Space (pane closed / engine switch). */
+export function disposeTerminal(sessionId: string): void {
+  disposeKey(ptyKey(currentProjectId(), sessionId));
+}
+
+/**
+ * Destroys every terminal of one Space — its processes included. Used when
+ * the Space is deleted or its working folder changes; NOT on Space switch,
+ * which keeps them alive in the background.
+ */
+export function disposeProjectTerminals(projectId: string): void {
+  const prefix = `${projectId}${KEY_SEP}`;
+  Array.from(entries.keys())
+    .filter(key => key.startsWith(prefix))
+    .forEach(disposeKey);
+}
+
+/** Number of terminals (and their processes) a Space keeps running. */
+export function liveTerminalCount(projectId: string): number {
+  const prefix = `${projectId}${KEY_SEP}`;
+  let n = 0;
+  entries.forEach((_entry, key) => { if (key.startsWith(prefix)) n += 1; });
+  return n;
 }

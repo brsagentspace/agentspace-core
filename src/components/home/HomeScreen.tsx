@@ -13,7 +13,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, FolderGit2, Clapperboard, Code2, FolderOpen, AlertTriangle } from 'lucide-react';
 import { useProjectStore, projectDomain } from '../../store/projectStore';
-import { createProject, openProject, setProjectRootPath } from '../../services/projectController';
+import { createProject, openProject, setProjectRootPath, removeProject } from '../../services/projectController';
+import { liveTerminalCount } from '../terminal/terminalRegistry';
 import { blueprintsForDomain } from '../../lib/blueprintCatalog';
 import { pickDirectory } from '../../services/platform';
 import type { SpaceDomain } from '../../types';
@@ -41,7 +42,7 @@ function PixelMascot() {
 
 export function HomeScreen() {
   const { t } = useTranslation('layout');
-  const { projects, agentsByProject, deleteProject } = useProjectStore();
+  const { projects, agentsByProject } = useProjectStore();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [name, setName] = useState('');
@@ -111,7 +112,7 @@ export function HomeScreen() {
                   <button
                     className="home-card-action home-card-delete"
                     title={t('home.delete_tooltip')}
-                    onClick={(e) => { e.stopPropagation(); deleteProject(p.id); }}
+                    onClick={(e) => { e.stopPropagation(); removeProject(p.id); }}
                   >
                     <Trash2 size={13} />
                   </button>
@@ -130,6 +131,11 @@ export function HomeScreen() {
                 )}
                 <div className="home-card-meta">
                   <span>{t('home.agents_count', { count: (agentsByProject[p.id] ?? []).length })}</span>
+                  {liveTerminalCount(p.id) > 0 && (
+                    <span className="home-card-live" title={t('home.live_terminals_tooltip')}>
+                      ● {t('home.live_terminals', { count: liveTerminalCount(p.id) })}
+                    </span>
+                  )}
                   <span>{t('home.last_opened', { date: p.lastOpenedAt.slice(0, 10) })}</span>
                 </div>
               </div>

@@ -321,6 +321,10 @@
   text-overflow: ellipsis;
 }
 
+.home-card-live {
+  color: #34d399;
+}
+
 .home-card-path--missing {
   display: flex;
   width: fit-content;

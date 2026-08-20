@@ -62,6 +62,8 @@
     "root_hint": "Terminaller burada açılır, hafıza haritası buradaki notları okur. Yalnızca yol saklanır — dosyalar repoya girmez.",
     "root_missing": "Klasör seçilmedi",
     "root_pick_tooltip": "Çalışma klasörü seç / değiştir",
-    "root_missing_tooltip": "Terminaller ev dizininde açılıyor — klasör seçmek için tıkla"
+    "root_missing_tooltip": "Terminaller ev dizininde açılıyor — klasör seçmek için tıkla",
+    "live_terminals": "{{count}} terminal çalışıyor",
+    "live_terminals_tooltip": "Bu Space'in terminalleri arka planda açık — girince aynı süreçlere bağlanırsın"
   }
 }

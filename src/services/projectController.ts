@@ -16,7 +16,7 @@ import { useAgentSpaceStore } from '../store';
 import { starterTeamForDomain } from '../store/starterTeams';
 import { useProjectStore } from '../store/projectStore';
 import { useTerminalStore, type TerminalSnapshot } from '../store/terminalStore';
-import { disposeAllTerminals } from '../components/terminal/terminalRegistry';
+import { disposeProjectTerminals } from '../components/terminal/terminalRegistry';
 import { stopWorkflow } from './workflowSimulator';
 import type { ProjectMeta } from '../store/projectStore';
 import type { SpaceDomain } from '../types';
@@ -85,7 +85,11 @@ function withTerminalPersistPaused(fn: () => void): void {
   saveActiveProjectState();
 }
 
-/** Opens a project: loads its team and restores its terminal workspace. */
+/**
+ * Opens a project: loads its team and restores its terminal workspace. The
+ * previous Space's terminals are left running (detached) — the registry
+ * keys them per Space, so coming back re-attaches the same processes.
+ */
 export function openProject(id: string): void {
   const project = useProjectStore.getState().projects.find(p => p.id === id);
   if (!project) return;
@@ -99,13 +103,12 @@ export function openProject(id: string): void {
     useAgentSpaceStore.getState().setAgents(team);
     useAgentSpaceStore.getState().setActiveBlueprint(project.blueprint);
 
-    disposeAllTerminals();
+    // Flip the active id first: panes key their terminals by it when they mount.
+    setActiveProjectId(id);
+    touchProject(id);
     const snap = terminalByProject[id];
     if (snap) useTerminalStore.getState().restoreSnapshot(snap);
     else useTerminalStore.getState().resetToDefault(team);
-
-    setActiveProjectId(id);
-    touchProject(id);
   });
 }
 
@@ -153,10 +156,25 @@ export function setProjectRootPath(id: string, rootPath: string): void {
   const project = projects.find(p => p.id === id);
   if (!project || (project.rootPath ?? '') === trimmed) return;
   updateProject(id, { rootPath: trimmed || undefined });
-  if (id !== activeProjectId) return;
-  disposeAllTerminals();
-  // Give the pty_kill IPC a beat before the same session ids respawn.
-  window.setTimeout(() => useTerminalStore.getState().restartAllSessions(), 90);
+  disposeProjectTerminals(id);
+  if (id === activeProjectId) {
+    // Give the pty_kill IPC a beat before the same session ids respawn.
+    window.setTimeout(() => useTerminalStore.getState().restartAllSessions(), 90);
+    return;
+  }
+  // Background Space: its panes get fresh Claude sessions when next opened.
+  const snap = useProjectStore.getState().terminalByProject[id];
+  if (snap) {
+    const sessions: typeof snap.sessions = {};
+    Object.values(snap.sessions).forEach(({ claudeSessionId: _dropped, ...rest }) => { sessions[rest.id] = rest; });
+    useProjectStore.getState().saveTerminal(id, { ...snap, sessions });
+  }
+}
+
+/** Deletes a Space and stops every terminal it still runs in the background. */
+export function removeProject(id: string): void {
+  disposeProjectTerminals(id);
+  useProjectStore.getState().deleteProject(id);
 }
 
 /** Persists the live team immediately (e.g. right after adding an agent). */

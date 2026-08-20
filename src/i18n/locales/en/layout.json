@@ -62,6 +62,8 @@
     "root_hint": "Terminals open here and the memory map reads notes from it. Only the path is stored — files never enter the repo.",
     "root_missing": "No folder set",
     "root_pick_tooltip": "Choose / change working folder",
-    "root_missing_tooltip": "Terminals open in your home folder — click to choose one"
+    "root_missing_tooltip": "Terminals open in your home folder — click to choose one",
+    "live_terminals": "{{count}} terminals running",
+    "live_terminals_tooltip": "This Space's terminals are still running in the background — opening it re-attaches them"
   }
 }
