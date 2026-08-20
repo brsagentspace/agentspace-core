@@ -34,10 +34,15 @@ export interface ProjectMeta {
   vaultPaths?: string[];
 }
 
+/** Metadata of the open Space, or null outside a project (read outside React). */
+export function activeProject(): ProjectMeta | null {
+  const { projects, activeProjectId } = useProjectStore.getState();
+  return projects.find(p => p.id === activeProjectId) ?? null;
+}
+
 /** Working folder of the open Space, or null when unset (read outside React). */
 export function activeProjectRootPath(): string | null {
-  const { projects, activeProjectId } = useProjectStore.getState();
-  return projects.find(p => p.id === activeProjectId)?.rootPath?.trim() || null;
+  return activeProject()?.rootPath?.trim() || null;
 }
 
 /** Domain of a project, tolerant of records created before the field existed. */
