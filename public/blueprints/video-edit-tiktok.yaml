@@ -12,10 +12,10 @@ inherits: "_base-media"
 description: |
   TikTok canlı yayın kayıtlarından (hediye / seviye atlama / yayın özeti) müşteri için
   kısa video üreten Remotion + ffmpeg pipeline'ı. Dört onaylı iş tipi vardır ve efekt
-  dilleri birbirinden farklıdır: BENİ SEV (vitrin girişi + müzikli devam), NORMAL LEVEL
+  dilleri birbirinden farklıdır: BENİ SEV (onaylı vitrin formülü, opsiyonel müzikli devam), NORMAL LEVEL
   ATLAMA (tek AI sahne + bant zoom), ÖZEL LEVEL ATLAMA (güçlü AI sahneler + büyük geçişler
-  + mega patlama) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv). Vitrin tek başına tip
-  değil, Beni Sev'in dokunulmaz giriş parçasıdır. İş tipi netleşmeden kurgu başlamaz.
+  + mega patlama) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv). Müzikli devamda vitrin
+  girişi dokunulmaz kalır. İş tipi netleşmeden kurgu başlamaz.
 
 tags: ["video", "remotion", "ffmpeg", "tiktok", "capcut", "edit", "recap"]
 
@@ -30,7 +30,7 @@ architecture:
     3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
     4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
   work_types:
-    beni_sev: "Vitrin girişi (dokunulmaz, kendi sesi; 3D telefon + alev + sayaç) → müzik girer → AI hikâye/klipler → beat-senkron final → karanlık bitiş (NurMix, tony_final)"
+    beni_sev: "Onaylı vitrin formülü: bezel telefon + filaman alev + 3D yatış + sayaç bandı + karanlık bitiş, yalnız orijinal ses (tony_final.mp4 = TonyVitrin); istenirse üstüne müzikli devam — müzik girer → AI hikâye/klipler → beat-senkron final (NurMix)"
     level_normal: "Tek AI sahne + bant zoom + hediye şelalesi (GizemMix, DuyguMix)"
     level_ozel: "Saray formülü: güçlü AI sahneler (5 perde) + büyük whip/liquid + mega patlama + elmas patlatma, 3 müzik kilidi (SarayMix)"
     recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap)"
@@ -135,7 +135,7 @@ agent_roles:
 initial_feed:
   - "Sen TikTok canlı yayın kliplerinden müşteri videosu üreten bir kurgu ekibisin. Araçlar: ffmpeg, Remotion, python (detect.py, beats.py, panel_scan.py)."
   - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ilgili iş tipinin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti) oku."
-  - "Önce iş tipini sor: BENİ SEV / NORMAL LEVEL / ÖZEL LEVEL / RECAP (docs/00 tablosu). Her tipin efekt dili farklıdır, karıştırma; vitrin tek başına tip değildir."
+  - "Önce iş tipini sor: BENİ SEV / NORMAL LEVEL / ÖZEL LEVEL / RECAP (docs/00 tablosu). Her tipin efekt dili farklıdır, karıştırma; Beni Sev = vitrin formülü (tony_final), müzikli devam opsiyonel."
   - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
   - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
   - "Kaynakta olmayan sesi dışarıdan ekleme. Sessiz teslim kabul edilebilir, yanlış ses kabul edilmez."
