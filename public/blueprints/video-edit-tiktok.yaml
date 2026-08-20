@@ -11,10 +11,11 @@ inherits: "_base-media"
 
 description: |
   TikTok canlı yayın kayıtlarından (hediye / seviye atlama / yayın özeti) müşteri için
-  kısa video üreten Remotion + ffmpeg pipeline'ı. Üç iş tipi vardır ve efekt dilleri
-  birbirinden farklıdır: VİTRİN (tek klip, orijinal ses), LEVEL ATLAMA / SARAY FORMÜLÜ
-  (AI sahne + hediye şelalesi + müzik kilidi) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv).
-  İş tipi baştan netleştirilmeden kurgu başlamaz.
+  kısa video üreten Remotion + ffmpeg pipeline'ı. Dört onaylı iş tipi vardır ve efekt
+  dilleri birbirinden farklıdır: BENİ SEV (vitrin girişi + müzikli devam), NORMAL LEVEL
+  ATLAMA (tek AI sahne + bant zoom), ÖZEL LEVEL ATLAMA (güçlü AI sahneler + büyük geçişler
+  + mega patlama) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv). Vitrin tek başına tip
+  değil, Beni Sev'in dokunulmaz giriş parçasıdır. İş tipi netleşmeden kurgu başlamaz.
 
 tags: ["video", "remotion", "ffmpeg", "tiktok", "capcut", "edit", "recap"]
 
@@ -29,9 +30,10 @@ architecture:
     3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
     4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
   work_types:
-    vitrin: "Tek klip, sentetik banner gerçeğinin üstüne, SFX yok, orijinal ses"
-    level_up: "Saray formülü: AI sahne(ler) + hediye şelalesi, 3 müzik kilidi, kükreme senkronu, elmas patlatma"
-    recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız"
+    beni_sev: "Vitrin girişi (dokunulmaz, kendi sesi; 3D telefon + alev + sayaç) → müzik girer → AI hikâye/klipler → beat-senkron final → karanlık bitiş (NurMix, tony_final)"
+    level_normal: "Tek AI sahne + bant zoom + hediye şelalesi (GizemMix, DuyguMix)"
+    level_ozel: "Saray formülü: güçlü AI sahneler (5 perde) + büyük whip/liquid + mega patlama + elmas patlatma, 3 müzik kilidi (SarayMix)"
+    recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap)"
 
 # ─────────────────────────────────────────────
 # ONAYLANMIŞ KURALLAR (müşteri geri bildirimiyle kesinleşti)
@@ -48,13 +50,13 @@ code_standards:
     - "RECAP: sadece hediyeler — davet paneli, bağlantı diyaloğu, istek listesi, klavye TEK KARE görünmez"
     - "RECAP: değer → hız (pahalı 1.3x, spam 2.6x), sıra kronolojik, final en dramatik hediyeye kilitlenir"
     - "RECAP crop: liderlik tablosu + yayıncı adı kadrajda kalır; üstten yalnız durum çubuğu atılır"
-    - "Level videosu sınıfı baştan sorulur: NORMAL (tek AI sahne + bant zoom) mı BÜYÜK (elmas patlatma) mı"
+    - "Level videosu sınıfı baştan sorulur: NORMAL (tek AI sahne + bant zoom) mı ÖZEL/BÜYÜK (güçlü AI sahneler + elmas patlatma) mı"
 
   forbidden:
     - "Karalama: UI gizlemek için yarı saydam yama — ya bezel/kırpma gibi doğal çözüm ya hiç"
     - "Sağa-sola pan bitişi (reddedildi)"
     - "İkinci/farklı görünümlü sayaç kutusu (reddedildi)"
-    - "Vitrin formülünde SFX eklemek — yalnız orijinal ses"
+    - "Vitrin girişine SFX eklemek — yalnız orijinal ses (Beni Sev'in müzikli devamı hariç)"
     - "RECAP'te kamera efekti: shake, zoom, whip, punch-in, RGB ayrışması, titreme"
     - "RECAP'te jenerik ses: Universe alım sesi, money gun, boom/whoosh/shimmer — kaynakta yoksa SESSİZ"
     - "Agresif üst crop (ör. 330px) — liderlik tablosunu götürür"
@@ -133,7 +135,7 @@ agent_roles:
 initial_feed:
   - "Sen TikTok canlı yayın kliplerinden müşteri videosu üreten bir kurgu ekibisin. Araçlar: ffmpeg, Remotion, python (detect.py, beats.py, panel_scan.py)."
   - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ilgili iş tipinin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti) oku."
-  - "Önce iş tipini sor: VİTRİN / LEVEL (NORMAL mi BÜYÜK mü) / RECAP. Her tipin efekt dili farklıdır, karıştırma."
+  - "Önce iş tipini sor: BENİ SEV / NORMAL LEVEL / ÖZEL LEVEL / RECAP (docs/00 tablosu). Her tipin efekt dili farklıdır, karıştırma; vitrin tek başına tip değildir."
   - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
   - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
   - "Kaynakta olmayan sesi dışarıdan ekleme. Sessiz teslim kabul edilebilir, yanlış ses kabul edilmez."
