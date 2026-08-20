@@ -2,7 +2,7 @@
  * @file blueprintEngine.ts
  * @description Runtime engine for loading, parsing, and resolving AgentSpace Blueprints.
  *
- * Implements YAML deserialization, blueprint inheritance resolution (_base.yaml merging),
+ * Implements YAML deserialization, chained blueprint inheritance (_base / _base-media …),
  * and dynamic rule extraction for the RulesPanel and LLM system prompt injection.
  *
  * @module lib/blueprintEngine
@@ -33,50 +33,87 @@ export async function loadRawBlueprint(blueprintId: string): Promise<BlueprintDe
   return parsed;
 }
 
+/** Guards against `inherits` cycles (a → b → a). */
+const MAX_INHERITANCE_DEPTH = 8;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
- * Resolves a complete blueprint definition with its inherited base rules.
+ * Merges a child blueprint over its parent.
+ *
+ * Arrays are concatenated (parent first, duplicates dropped) so rule lists
+ * such as `forbidden` / `principles` / `rules` accumulate down the chain;
+ * nested objects merge recursively; scalars from the child win.
+ */
+export function mergeBlueprints(
+  parent: Record<string, unknown>,
+  child: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...parent };
+  for (const [key, childValue] of Object.entries(child)) {
+    const parentValue = parent[key];
+    if (Array.isArray(parentValue) && Array.isArray(childValue)) {
+      out[key] = Array.from(new Set([...parentValue, ...childValue]));
+    } else if (isPlainObject(parentValue) && isPlainObject(childValue)) {
+      out[key] = mergeBlueprints(parentValue, childValue);
+    } else {
+      out[key] = childValue;
+    }
+  }
+  return out;
+}
+
+/**
+ * Resolves a complete blueprint definition with its full inheritance chain
+ * (e.g. video-edit-tiktok → _base-media). Identity fields (id, name,
+ * version, description, inherits) always come from the requested blueprint.
  *
  * @param blueprintId - Target blueprint ID
  * @returns Fully resolved BlueprintDefinition with combined rules
  */
 export async function resolveBlueprint(blueprintId: string): Promise<BlueprintDefinition> {
-  if (BLUEPRINT_CACHE.has(blueprintId)) {
-    return BLUEPRINT_CACHE.get(blueprintId)!;
-  }
+  const cached = BLUEPRINT_CACHE.get(blueprintId);
+  if (cached) return cached;
 
-  const blueprint = await loadRawBlueprint(blueprintId);
+  const chain: BlueprintDefinition[] = [];
+  const seen = new Set<string>();
+  let currentId: string | undefined = blueprintId;
 
-  // If blueprint specifies inheritance, fetch and merge base
-  if (blueprint.inherits) {
+  while (currentId && !seen.has(currentId) && chain.length < MAX_INHERITANCE_DEPTH) {
+    seen.add(currentId);
     try {
-      const baseBlueprint = await loadRawBlueprint(blueprint.inherits);
-
-      const merged: BlueprintDefinition = {
-        ...baseBlueprint,
-        ...blueprint,
-        code_standards: {
-          ...baseBlueprint.code_standards,
-          ...blueprint.code_standards,
-          forbidden: [
-            ...(baseBlueprint.code_standards?.forbidden || []),
-            ...(blueprint.code_standards?.forbidden || []),
-          ],
-        },
-        testing: {
-          ...baseBlueprint.testing,
-          ...blueprint.testing,
-        },
-      };
-
-      BLUEPRINT_CACHE.set(blueprintId, merged);
-      return merged;
-    } catch {
-      // Fallback to standalone blueprint if base cannot be loaded
+      const bp = await loadRawBlueprint(currentId);
+      chain.push(bp);
+      currentId = bp.inherits;
+    } catch (err) {
+      // A missing base degrades to the part of the chain we could load.
+      if (chain.length === 0) throw err;
+      break;
     }
   }
 
-  BLUEPRINT_CACHE.set(blueprintId, blueprint);
-  return blueprint;
+  const leaf = chain[0];
+  const merged = chain
+    .slice()
+    .reverse()
+    .reduce<Record<string, unknown>>(
+      (acc, bp) => mergeBlueprints(acc, bp as unknown as Record<string, unknown>),
+      {},
+    );
+
+  const resolved: BlueprintDefinition = {
+    ...(merged as unknown as BlueprintDefinition),
+    id: leaf.id,
+    name: leaf.name,
+    version: leaf.version,
+    description: leaf.description,
+    inherits: leaf.inherits,
+  };
+
+  BLUEPRINT_CACHE.set(blueprintId, resolved);
+  return resolved;
 }
 
 /**
@@ -95,6 +132,12 @@ export function compileAgentSystemPrompt(blueprint: BlueprintDefinition): string
   if (blueprint.initial_feed && blueprint.initial_feed.length > 0) {
     lines.push('--- CORE OPERATIONAL GUIDELINES ---');
     blueprint.initial_feed.forEach((feed) => lines.push(`• ${feed}`));
+    lines.push('');
+  }
+
+  if (blueprint.code_standards?.principles && blueprint.code_standards.principles.length > 0) {
+    lines.push('--- APPROVED PRINCIPLES ---');
+    blueprint.code_standards.principles.forEach((rule) => lines.push(`✔ ${rule}`));
     lines.push('');
   }
 

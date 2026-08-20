@@ -19,11 +19,17 @@
     "name": "ML Pipeline",
     "description": "PyTorch ve MLflow ile Python ML/AI pipeline"
   },
+  "video_edit_tiktok": {
+    "name": "TikTok Canlı Yayın Video Edit",
+    "description": "Remotion + ffmpeg ile hediye / level / yayın özeti videoları"
+  },
   "panel": {
     "active_rules_title": "Aktif Kurallar",
     "section_architecture": "Mimari",
     "section_code_standards": "Kod Standartları",
     "section_forbidden": "Yasaklar",
-    "section_agents": "Ajan Rolleri"
+    "section_agents": "Ajan Rolleri",
+    "section_principles": "Onaylı İlkeler",
+    "section_testing": "Doğrulama ve Kalite Kapıları"
   }
 }

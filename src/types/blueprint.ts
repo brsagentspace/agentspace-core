@@ -23,8 +23,12 @@ export interface BlueprintArchitecture {
   [key: string]: unknown;
 }
 
+export type BlueprintDomain = 'software' | 'media';
+
 export interface BlueprintCodeStandards {
   language?: string;
+  /** Positive, approved rules (media blueprints lean on these) */
+  principles?: string[];
   forbidden?: string[];
   performance?: string[];
   [key: string]: unknown;
@@ -41,7 +45,10 @@ export interface BlueprintDefinition {
   id: string;
   version: string;
   name: string;
-  project_type: 'mobile' | 'web' | 'backend' | 'ml' | 'universal';
+  project_type: 'mobile' | 'web' | 'backend' | 'ml' | 'media' | 'universal';
+  /** Which Space domain this blueprint serves; defaults to 'software' */
+  domain?: BlueprintDomain;
+  /** Parent blueprint id; chains are resolved recursively (_base-media → …) */
   inherits?: string;
   description: string;
   tags?: string[];
