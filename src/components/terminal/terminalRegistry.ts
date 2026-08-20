@@ -149,8 +149,12 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
   term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m oturumu hazır.`);
   term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${engineLabel}] bağlı.\x1b[0m`);
   const cwd = activeProjectRootPath();
-  if (cwd) term.writeln(`\x1b[38;2;144;144;162mÇalışma klasörü: ${cwd}\x1b[0m`);
   const project = activeProject();
+  if (cwd) {
+    term.writeln(`\x1b[38;2;144;144;162mÇalışma klasörü: ${cwd}\x1b[0m`);
+  } else if (project) {
+    term.writeln('\x1b[38;2;251;191;36m⚠ Bu Space için çalışma klasörü seçilmedi — ev dizininde açıldı. Şeritteki "Klasör seç" ile ayarla.\x1b[0m');
+  }
   if (project) {
     const agent = useAgentSpaceStore.getState().agents.find(a => a.id === session.agentId);
     const who = agent ? ` · ajan ${agent.name} (${agent.role})` : '';

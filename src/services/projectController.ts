@@ -141,6 +141,24 @@ export function goHome(): void {
   });
 }
 
+/**
+ * Sets (or changes) a Space's working folder after creation. When the Space
+ * is open, its terminals restart in the new folder: the PTYs are killed and
+ * every pane re-mounts with a fresh Claude session, because Claude Code
+ * stores transcripts per cwd and the old ids would not resolve there.
+ */
+export function setProjectRootPath(id: string, rootPath: string): void {
+  const trimmed = rootPath.trim();
+  const { projects, activeProjectId, updateProject } = useProjectStore.getState();
+  const project = projects.find(p => p.id === id);
+  if (!project || (project.rootPath ?? '') === trimmed) return;
+  updateProject(id, { rootPath: trimmed || undefined });
+  if (id !== activeProjectId) return;
+  disposeAllTerminals();
+  // Give the pty_kill IPC a beat before the same session ids respawn.
+  window.setTimeout(() => useTerminalStore.getState().restartAllSessions(), 90);
+}
+
 /** Persists the live team immediately (e.g. right after adding an agent). */
 export function persistTeamNow(): void {
   const { activeProjectId, saveAgents } = useProjectStore.getState();

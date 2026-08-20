@@ -59,6 +59,9 @@
     "root_label": "Çalışma klasörü",
     "root_placeholder": "/Users/sen/proje (isteğe bağlı)",
     "root_browse": "Klasör seç",
-    "root_hint": "Terminaller burada açılır, hafıza haritası buradaki notları okur. Yalnızca yol saklanır — dosyalar repoya girmez."
+    "root_hint": "Terminaller burada açılır, hafıza haritası buradaki notları okur. Yalnızca yol saklanır — dosyalar repoya girmez.",
+    "root_missing": "Klasör seçilmedi",
+    "root_pick_tooltip": "Çalışma klasörü seç / değiştir",
+    "root_missing_tooltip": "Terminaller ev dizininde açılıyor — klasör seçmek için tıkla"
   }
 }

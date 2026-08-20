@@ -46,6 +46,12 @@ interface TerminalState {
   setSessionEngine: (id: string, engine: string) => void;
   /** Remembers the Claude conversation a pane is running. */
   setClaudeSessionId: (id: string, claudeSessionId: string) => void;
+  /**
+   * Replaces every session object (panes re-mount their terminals) and
+   * drops the Claude session ids — used when the Space's working folder
+   * changes, since Claude keeps transcripts per cwd.
+   */
+  restartAllSessions: () => void;
   /** Restores the default workspace (used when switching projects). */
   /** Rebuilds the workspace — one pane per agent when a team is given. */
   resetToDefault: (team?: Agent[]) => void;
@@ -160,6 +166,15 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       const session = state.sessions[id];
       if (!session || session.claudeSessionId === claudeSessionId) return state;
       return { sessions: { ...state.sessions, [id]: { ...session, claudeSessionId } } };
+    }),
+
+  restartAllSessions: () =>
+    set((state) => {
+      const sessions: Record<string, TerminalSession> = {};
+      Object.values(state.sessions).forEach(({ claudeSessionId: _dropped, ...rest }) => {
+        sessions[rest.id] = { ...rest };
+      });
+      return { sessions };
     }),
 
   resetToDefault: (team) => {

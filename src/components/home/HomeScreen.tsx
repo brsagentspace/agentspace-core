@@ -11,9 +11,9 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, FolderGit2, Clapperboard, Code2, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, FolderGit2, Clapperboard, Code2, FolderOpen, AlertTriangle } from 'lucide-react';
 import { useProjectStore, projectDomain } from '../../store/projectStore';
-import { createProject, openProject } from '../../services/projectController';
+import { createProject, openProject, setProjectRootPath } from '../../services/projectController';
 import { blueprintsForDomain } from '../../lib/blueprintCatalog';
 import { pickDirectory } from '../../services/platform';
 import type { SpaceDomain } from '../../types';
@@ -62,6 +62,11 @@ export function HomeScreen() {
     if (picked) setRootPath(picked);
   };
 
+  const changeRoot = async (id: string, current?: string) => {
+    const picked = await pickDirectory(current || undefined);
+    if (picked) setProjectRootPath(id, picked);
+  };
+
   const submit = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -97,7 +102,14 @@ export function HomeScreen() {
                     {t(`home.domain_${projectDomain(p)}`)}
                   </span>
                   <button
-                    className="home-card-delete"
+                    className="home-card-action"
+                    title={t('home.root_pick_tooltip')}
+                    onClick={(e) => { e.stopPropagation(); void changeRoot(p.id, p.rootPath); }}
+                  >
+                    <FolderOpen size={13} />
+                  </button>
+                  <button
+                    className="home-card-action home-card-delete"
                     title={t('home.delete_tooltip')}
                     onClick={(e) => { e.stopPropagation(); deleteProject(p.id); }}
                   >
@@ -105,7 +117,17 @@ export function HomeScreen() {
                   </button>
                 </div>
                 <span className="home-card-blueprint">{p.blueprint}</span>
-                {p.rootPath && <span className="home-card-path" title={p.rootPath}>{p.rootPath}</span>}
+                {p.rootPath ? (
+                  <span className="home-card-path" title={p.rootPath}>{p.rootPath}</span>
+                ) : (
+                  <button
+                    className="home-card-path home-card-path--missing"
+                    title={t('home.root_missing_tooltip')}
+                    onClick={(e) => { e.stopPropagation(); void changeRoot(p.id); }}
+                  >
+                    <AlertTriangle size={11} /> {t('home.root_missing')}
+                  </button>
+                )}
                 <div className="home-card-meta">
                   <span>{t('home.agents_count', { count: (agentsByProject[p.id] ?? []).length })}</span>
                   <span>{t('home.last_opened', { date: p.lastOpenedAt.slice(0, 10) })}</span>

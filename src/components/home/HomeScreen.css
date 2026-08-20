@@ -128,8 +128,7 @@
   white-space: nowrap;
 }
 
-.home-card-delete {
-  margin-left: auto;
+.home-card-action {
   background: none;
   border: none;
   color: #4a4a5c;
@@ -137,6 +136,15 @@
   padding: 4px;
   border-radius: 4px;
   display: flex;
+}
+
+.home-card-action:first-of-type {
+  margin-left: auto;
+}
+
+.home-card-action:hover {
+  color: #c4b5fd;
+  background: #23242f;
 }
 
 .home-card-delete:hover {
@@ -311,6 +319,27 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.home-card-path--missing {
+  display: flex;
+  width: fit-content;
+  margin-top: 0;
+  margin-bottom: 12px;
+  align-items: center;
+  gap: 5px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 4px;
+  color: #fbbf24;
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+.home-card-path--missing:hover {
+  background: rgba(251, 191, 36, 0.16);
 }
 
 .home-domains {
