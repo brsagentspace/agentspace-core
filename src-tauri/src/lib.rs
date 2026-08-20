@@ -1,6 +1,7 @@
 // AgentSpace — Tauri Backend
 // Exposes CLI engine commands to the frontend via Tauri IPC.
 
+mod claude_sessions;
 mod cli_engine;
 mod pty;
 mod vault;
@@ -111,6 +112,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(ActiveEngine(Mutex::new("claude".to_string())))
         .manage(pty::PtyManager::default())
+        .manage(claude_sessions::ClaudeSessionCache::default())
         .invoke_handler(tauri::generate_handler![
             detect_cli_engines,
             run_cli_prompt,
@@ -121,6 +123,8 @@ pub fn run() {
             pty::pty_resize,
             pty::pty_kill,
             vault::vault_scan,
+            claude_sessions::claude_sessions_list,
+            claude_sessions::claude_session_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentSpace");

@@ -23,6 +23,12 @@ export interface TerminalSession {
   command?: string;
   /** CLI engine this session runs (claude/codex/gemini); falls back to global */
   engine?: string;
+  /**
+   * Claude Code conversation id bound to this pane. First launch passes it
+   * as `--session-id`; later launches (app restart, engine switch back to
+   * claude) `--resume` it, so the conversation outlives the process.
+   */
+  claudeSessionId?: string;
 }
 
 interface TerminalState {
@@ -38,6 +44,8 @@ interface TerminalState {
   removeSession: (id: string) => void;
   /** Switches a session's CLI engine (caller restarts its terminal). */
   setSessionEngine: (id: string, engine: string) => void;
+  /** Remembers the Claude conversation a pane is running. */
+  setClaudeSessionId: (id: string, claudeSessionId: string) => void;
   /** Restores the default workspace (used when switching projects). */
   /** Rebuilds the workspace — one pane per agent when a team is given. */
   resetToDefault: (team?: Agent[]) => void;
@@ -145,6 +153,13 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
           [id]: { ...session, engine, command: engine },
         },
       };
+    }),
+
+  setClaudeSessionId: (id, claudeSessionId) =>
+    set((state) => {
+      const session = state.sessions[id];
+      if (!session || session.claudeSessionId === claudeSessionId) return state;
+      return { sessions: { ...state.sessions, [id]: { ...session, claudeSessionId } } };
     }),
 
   resetToDefault: (team) => {

@@ -4,7 +4,10 @@
  *
  * Keeps projectStore pure: this module moves agent teams in/out of the
  * simulation store, resets the terminal workspace and stamps timestamps
- * when a project is created, opened or left.
+ * when a project is created, opened or left. The terminal workspace is
+ * also mirrored into projectStore on every change (debounced), so an
+ * app crash or plain quit never loses the pane layout or the Claude
+ * session ids the panes resume from.
  *
  * @module services
  */
@@ -12,7 +15,7 @@
 import { useAgentSpaceStore } from '../store';
 import { starterTeamForDomain } from '../store/starterTeams';
 import { useProjectStore } from '../store/projectStore';
-import { useTerminalStore } from '../store/terminalStore';
+import { useTerminalStore, type TerminalSnapshot } from '../store/terminalStore';
 import { disposeAllTerminals } from '../components/terminal/terminalRegistry';
 import { stopWorkflow } from './workflowSimulator';
 import type { ProjectMeta } from '../store/projectStore';
@@ -27,17 +30,59 @@ export interface CreateProjectOptions {
   withStarterTeam: boolean;
 }
 
+/** Snapshot of the live terminal workspace (layout + session meta). */
+function terminalSnapshot(): TerminalSnapshot {
+  const t = useTerminalStore.getState();
+  return { sessions: t.sessions, mosaicNodes: t.mosaicNodes, nextIndex: t.nextIndex };
+}
+
 /** Persists the open project's agent team and terminal workspace. */
 function saveActiveProjectState(): void {
   const { activeProjectId, saveAgents, saveTerminal } = useProjectStore.getState();
   if (!activeProjectId) return;
   saveAgents(activeProjectId, useAgentSpaceStore.getState().agents);
-  const t = useTerminalStore.getState();
-  saveTerminal(activeProjectId, {
-    sessions: t.sessions,
-    mosaicNodes: t.mosaicNodes,
-    nextIndex: t.nextIndex,
+  saveTerminal(activeProjectId, terminalSnapshot());
+}
+
+// ── Continuous terminal persistence ─────────────────────────────────────────
+// While a project is switching, the terminal store briefly holds the OLD
+// project's panes (or the new one's before activeProjectId flips); writes
+// are suspended so nothing lands under the wrong project id.
+
+let terminalPersistSuspended = false;
+let terminalPersistTimer: number | null = null;
+
+function scheduleTerminalPersist(): void {
+  if (terminalPersistSuspended || terminalPersistTimer !== null) return;
+  terminalPersistTimer = window.setTimeout(() => {
+    terminalPersistTimer = null;
+    if (terminalPersistSuspended) return;
+    const { activeProjectId, saveTerminal } = useProjectStore.getState();
+    if (activeProjectId) saveTerminal(activeProjectId, terminalSnapshot());
+  }, 250);
+}
+
+if (typeof window !== 'undefined') {
+  useTerminalStore.subscribe((state, prev) => {
+    if (state.sessions !== prev.sessions || state.mosaicNodes !== prev.mosaicNodes || state.nextIndex !== prev.nextIndex) {
+      scheduleTerminalPersist();
+    }
   });
+}
+
+/** Runs a project switch with terminal persistence paused, then saves once. */
+function withTerminalPersistPaused(fn: () => void): void {
+  terminalPersistSuspended = true;
+  if (terminalPersistTimer !== null) {
+    window.clearTimeout(terminalPersistTimer);
+    terminalPersistTimer = null;
+  }
+  try {
+    fn();
+  } finally {
+    terminalPersistSuspended = false;
+  }
+  saveActiveProjectState();
 }
 
 /** Opens a project: loads its team and restores its terminal workspace. */
@@ -46,20 +91,22 @@ export function openProject(id: string): void {
   if (!project) return;
 
   stopWorkflow();
-  saveActiveProjectState();
+  withTerminalPersistPaused(() => {
+    saveActiveProjectState();
 
-  const { agentsByProject, terminalByProject, setActiveProjectId, touchProject } = useProjectStore.getState();
-  const team = agentsByProject[id] ?? [];
-  useAgentSpaceStore.getState().setAgents(team);
-  useAgentSpaceStore.getState().setActiveBlueprint(project.blueprint);
+    const { agentsByProject, terminalByProject, setActiveProjectId, touchProject } = useProjectStore.getState();
+    const team = agentsByProject[id] ?? [];
+    useAgentSpaceStore.getState().setAgents(team);
+    useAgentSpaceStore.getState().setActiveBlueprint(project.blueprint);
 
-  disposeAllTerminals();
-  const snap = terminalByProject[id];
-  if (snap) useTerminalStore.getState().restoreSnapshot(snap);
-  else useTerminalStore.getState().resetToDefault(team);
+    disposeAllTerminals();
+    const snap = terminalByProject[id];
+    if (snap) useTerminalStore.getState().restoreSnapshot(snap);
+    else useTerminalStore.getState().resetToDefault(team);
 
-  setActiveProjectId(id);
-  touchProject(id);
+    setActiveProjectId(id);
+    touchProject(id);
+  });
 }
 
 /** Creates a project (optionally seeded with the domain's starter team) and opens it. */
@@ -88,8 +135,10 @@ export function createProject(opts: CreateProjectOptions): string {
 /** Returns to the home screen, persisting the open project's state. */
 export function goHome(): void {
   stopWorkflow();
-  saveActiveProjectState();
-  useProjectStore.getState().setActiveProjectId(null);
+  withTerminalPersistPaused(() => {
+    saveActiveProjectState();
+    useProjectStore.getState().setActiveProjectId(null);
+  });
 }
 
 /** Persists the live team immediately (e.g. right after adding an agent). */
@@ -107,5 +156,5 @@ export function hydrateActiveProject(): void {
   const project = projects.find(p => p.id === activeProjectId);
   if (project) useAgentSpaceStore.getState().setActiveBlueprint(project.blueprint);
   const snap = terminalByProject[activeProjectId];
-  if (snap) useTerminalStore.getState().restoreSnapshot(snap);
+  if (snap) withTerminalPersistPaused(() => useTerminalStore.getState().restoreSnapshot(snap));
 }

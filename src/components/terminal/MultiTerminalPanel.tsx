@@ -5,18 +5,23 @@
  * Terminal instances live in terminalRegistry (outside React) so mosaic
  * tree changes never destroy scrollback; panes only attach the terminal's
  * DOM element. Toolbar: copy, split right/down, zoom (tmux-style), close.
+ * The strip's "Oturumlar" menu lists the Space's recorded Claude
+ * conversations and loads any of them into a pane (`claude --resume`).
  *
  * @module components/terminal
  */
 
-import React, { useEffect, useRef } from 'react';
-import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare, History } from 'lucide-react';
 import { Mosaic, MosaicWindow, createRemoveUpdate, updateTree } from 'react-mosaic-component';
 import type { MosaicNode, MosaicPath, MosaicDirection } from 'react-mosaic-component';
 import { useTerminalStore, engineCommand } from '../../store/terminalStore';
 import type { TerminalSession } from '../../store/terminalStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useProjectStore } from '../../store/projectStore';
 import { getOrCreateTerminal, attachTerminal, disposeTerminal } from './terminalRegistry';
+import { SessionsMenu } from './SessionsMenu';
+import { paneTitleFor, type ClaudeSessionInfo } from '../../services/claudeSessions';
 
 import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
@@ -105,6 +110,36 @@ export function MultiTerminalPanel() {
     appendToTree(createSession());
   };
 
+  // ── Sessions menu ──
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const closeSessions = useCallback(() => setSessionsOpen(false), []);
+  // Subscribed (not read once) so a later-picked Space folder re-targets the menu.
+  const cwd = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId)?.rootPath?.trim() || null);
+  const openPanes = useMemo(() => {
+    const map: Record<string, string> = {};
+    Object.values(sessions).forEach(s => { if (s.claudeSessionId) map[s.claudeSessionId] = s.id; });
+    return map;
+  }, [sessions]);
+
+  /** Loads a recorded conversation into a pane, or focuses the pane already running it. */
+  const openClaudeSession = (info: ClaudeSessionInfo) => {
+    setSessionsOpen(false);
+    const existing = openPanes[info.id];
+    if (existing && sessions[existing]) {
+      setZoomedId(existing);
+      return;
+    }
+    if (zoomedId) setZoomedId(null);
+    const newId = createSession({
+      title: paneTitleFor(info),
+      statusColor: '#8b5cf6',
+      engine: 'claude',
+      command: 'claude',
+      claudeSessionId: info.id,
+    });
+    appendToTree(newId);
+  };
+
   // Office bridge: clicking an agent focuses (or creates) their terminal.
   const focusRef = useRef({ sessions, mosaicNodes });
   focusRef.current = { sessions, mosaicNodes };
@@ -188,9 +223,20 @@ export function MultiTerminalPanel() {
       <div className="term-strip">
         <TerminalSquare size={13} />
         <span>TERMİNALLER · {sessionCount}</span>
+        <button
+          className={`term-strip-btn${sessionsOpen ? ' is-active' : ''}`}
+          title="Bu Space'in kayıtlı Claude oturumları — kapatılmış olsa bile bir terminale yükle"
+          onClick={() => setSessionsOpen(v => !v)}
+        >
+          <History size={12} /> OTURUMLAR
+        </button>
+        <span className="term-strip-spacer" />
         <button className="term-action" title="Yeni terminal" onClick={addTerminal}>
           <Plus size={14} />
         </button>
+        {sessionsOpen && (
+          <SessionsMenu cwd={cwd} openPanes={openPanes} onOpen={openClaudeSession} onClose={closeSessions} />
+        )}
       </div>
 
       <div style={{ flex: 1, minHeight: 0 }}>

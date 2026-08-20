@@ -13,13 +13,14 @@
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import type { TerminalSession } from '../../store/terminalStore';
+import { useTerminalStore, type TerminalSession } from '../../store/terminalStore';
 import { activeProject, activeProjectRootPath } from '../../store/projectStore';
 import { useAgentSpaceStore } from '../../store';
 import { resolveBlueprint } from '../../lib/blueprintEngine';
 import {
   buildAgentBrief, buildAgentEnv, engineLaunchCommand, type BriefContext,
 } from '../../services/agentBrief';
+import { planClaudeLaunch } from '../../services/claudeSessions';
 
 /** True when running inside the Tauri shell (real PTY available). */
 const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -91,11 +92,12 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
   const { invoke } = await import('@tauri-apps/api/core');
   await ensurePtyListeners();
   const ctx = await briefContextFor(session);
+  const cwd = activeProjectRootPath();
   await invoke('pty_spawn', {
     id: session.id,
     cols: entry.term.cols || 80,
     rows: entry.term.rows || 24,
-    cwd: activeProjectRootPath(),
+    cwd,
     env: ctx ? buildAgentEnv(ctx) : null,
     brief: ctx ? buildAgentBrief(ctx) : null,
   });
@@ -103,10 +105,22 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
   entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: session.id, cols, rows }); });
   if (session.command) {
     // Agent sessions store the bare engine name; claude additionally
-    // ingests the brief as an appended system prompt.
-    const launch = session.engine && session.command === session.engine
-      ? engineLaunchCommand(session.engine, ctx)
-      : session.command;
+    // ingests the brief as an appended system prompt and keeps its
+    // conversation across restarts via a pane-bound session id.
+    const isEngine = !!session.engine && session.command === session.engine;
+    let launch = session.command;
+    if (isEngine && session.engine === 'claude') {
+      const plan = await planClaudeLaunch(cwd, session.claudeSessionId);
+      useTerminalStore.getState().setClaudeSessionId(session.id, plan.sessionId);
+      launch = engineLaunchCommand('claude', ctx, plan);
+      entry.term.writeln(
+        plan.mode === 'resume'
+          ? `\x1b[38;2;52;211;153m↻ Claude oturumu kaldığı yerden devam ediyor (${plan.sessionId.slice(0, 8)}).\x1b[0m`
+          : `\x1b[38;2;144;144;162mYeni Claude oturumu: ${plan.sessionId.slice(0, 8)}\x1b[0m`,
+      );
+    } else if (isEngine) {
+      launch = engineLaunchCommand(session.engine!, ctx);
+    }
     void invoke('pty_write', { id: session.id, data: `${launch}\n` });
   }
 }
