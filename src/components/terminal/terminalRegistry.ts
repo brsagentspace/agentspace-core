@@ -14,6 +14,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import type { TerminalSession } from '../../store/terminalStore';
+import { activeProjectRootPath } from '../../store/projectStore';
 
 /** True when running inside the Tauri shell (real PTY available). */
 const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -74,7 +75,7 @@ async function connectPty(session: TerminalSession, entry: RegistryEntry): Promi
     id: session.id,
     cols: entry.term.cols || 80,
     rows: entry.term.rows || 24,
-    cwd: null,
+    cwd: activeProjectRootPath(),
   });
   entry.term.onData((data) => { void invoke('pty_write', { id: session.id, data }); });
   entry.term.onResize(({ cols, rows }) => { void invoke('pty_resize', { id: session.id, cols, rows }); });
@@ -106,6 +107,8 @@ export function getOrCreateTerminal(session: TerminalSession, activeEngine: stri
   const engineLabel = session.engine ?? activeEngine;
   term.writeln(`\x1b[38;2;139;92;246m${session.title}\x1b[0m oturumu hazır.`);
   term.writeln(`\x1b[38;2;144;144;162mCLI motoru: [${engineLabel}] bağlı.\x1b[0m`);
+  const cwd = activeProjectRootPath();
+  if (cwd) term.writeln(`\x1b[38;2;144;144;162mÇalışma klasörü: ${cwd}\x1b[0m`);
 
   const entry = { term, fit };
   entries.set(session.id, entry);
