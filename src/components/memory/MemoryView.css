@@ -295,3 +295,104 @@
   border-color: #8b5cf6;
   background: rgba(36, 31, 56, 0.95);
 }
+
+/* ── Markdown vaults ─────────────────────────────────────────────────────── */
+
+.memory-vaults {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.memory-vaults-label {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: #9090a2;
+  font-family: 'Courier New', monospace;
+}
+
+.memory-vault-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #16161f;
+  border: 1px solid #2c2c3b;
+  border-radius: 999px;
+  padding: 2px 6px 2px 9px;
+  color: #c8c8d8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-vault-remove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #9090a2;
+  cursor: pointer;
+}
+
+.memory-vault-remove:hover {
+  background: #2c2c3b;
+  color: #fff;
+}
+
+.memory-vault-input {
+  background: #191922;
+  border: 1px solid #8b5cf6;
+  border-radius: 4px;
+  color: #f8f8fb;
+  padding: 3px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  width: 280px;
+  outline: none;
+}
+
+.memory-vault-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #191922;
+  border: 1px dashed #3d3d52;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #c8c8d8;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.memory-vault-add:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+.memory-vault-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.memory-notices {
+  padding: 6px 16px;
+  background: #241d0c;
+  border-bottom: 1px solid #4a3a14;
+  color: #fbbf24;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.memory-detail-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  word-break: break-all;
+}

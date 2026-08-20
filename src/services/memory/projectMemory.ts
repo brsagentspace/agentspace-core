@@ -4,13 +4,16 @@
  *
  * Composition: agent anchor nodes from the project's live team
  * + (optionally) the demo seed remapped onto the team
- * + runtime journal entries recorded while the app runs.
+ * + runtime journal entries recorded while the app runs
+ * + markdown vaults (the Space's own notes) scanned from disk on desktop.
  *
  * @module services/memory
  */
 
 import { JsonMemoryStore } from './MemoryStore';
 import type { MemoryGraphData } from './MemoryStore';
+import { parseVaultFiles, scanVault } from './MarkdownVaultStore';
+import { IS_TAURI } from '../platform';
 import { useMemoryJournalStore } from '../../store/memoryJournalStore';
 import type { Agent } from '../../types';
 import type { GraphNode, GraphNodeType, GraphRelationType } from '../../types/knowledgeGraph';
@@ -27,6 +30,7 @@ export async function loadProjectMemory(
   projectId: string | null,
   team: Agent[],
   includeDemoSeed: boolean,
+  vaultPaths: string[] = [],
 ): Promise<MemoryGraphData> {
   const agents: Record<string, string> = Object.fromEntries(team.map(a => [a.id, a.name]));
 
@@ -83,7 +87,36 @@ export async function loadProjectMemory(
     data.indexedChunks += journal.length * 4;
   }
 
+  await mergeVaults(data, vaultPaths);
+
   return data;
+}
+
+/** Scans each vault folder and folds its graph into `data` (desktop only). */
+async function mergeVaults(data: MemoryGraphData, vaultPaths: string[]): Promise<void> {
+  if (vaultPaths.length === 0) return;
+  const notices: string[] = data.notices ?? [];
+  if (!IS_TAURI && !import.meta.env.DEV) {
+    notices.push('vault_desktop_only');
+    data.notices = notices;
+    return;
+  }
+  const ingestedAt = new Date().toISOString();
+  for (const root of vaultPaths) {
+    try {
+      const scan = await scanVault(root);
+      const vault = parseVaultFiles(scan.files, { root: scan.root, ingestedAt });
+      data.nodes.push(...vault.nodes);
+      data.relations.push(...vault.relations);
+      Object.assign(data.agents, vault.agents);
+      data.indexedFiles += vault.indexedFiles;
+      data.indexedChunks += vault.indexedChunks;
+      if (scan.capped) notices.push(`vault_capped:${root}`);
+    } catch (err) {
+      notices.push(`vault_error:${root}:${String(err)}`);
+    }
+  }
+  if (notices.length) data.notices = notices;
 }
 
 const OWNER_REL: Record<string, GraphRelationType> = {

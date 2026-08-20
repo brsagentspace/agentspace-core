@@ -17,5 +17,14 @@
   "loading": "Hafıza grafiği yükleniyor…",
   "canvas_placeholder": "Hafıza haritası burada render edilecek (Faz 2)",
   "time_now": "şimdi",
-  "time_tooltip": "Zaman yolculuğu: bu tarihten sonra kaydedilen hafızaları gizle"
+  "time_tooltip": "Zaman yolculuğu: bu tarihten sonra kaydedilen hafızaları gizle",
+  "vault_label": "VAULT",
+  "vault_add": "Klasör ekle",
+  "vault_remove": "Vault'u kaldır",
+  "vault_placeholder": "/Users/sen/notlar (Enter)",
+  "vault_hint": "Markdown klasörleri: dosya = düğüm, ## bölüm = alt düğüm, [[link]] = bağ",
+  "vault_desktop_only": "Markdown vault'lar yalnızca masaüstü uygulamada yüklenir (npm run tauri dev).",
+  "vault_capped": "{{path}}: dosya sınırına ulaşıldı, bazı notlar atlandı.",
+  "vault_error": "{{path}} yüklenemedi: {{error}}",
+  "panel_source": "Kaynak"
 }

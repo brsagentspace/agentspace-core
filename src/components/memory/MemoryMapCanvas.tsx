@@ -17,6 +17,27 @@ import { agentColor } from '../../services/memory/MemoryStore';
 
 const SPACE = 4096;
 
+/** Re-frame moments (ms after start): the layout keeps contracting for a while. */
+const FIT_SCHEDULE_MS = [900, 2500, 5000];
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Force parameters tuned for ~1000 nodes, scaled for smaller graphs: a
+ * 70-node vault needs far more repulsion and longer links or it collapses
+ * into a single blob at the centre of the 4096² space.
+ */
+function physicsFor(nodeCount: number) {
+  const k = Math.sqrt(1000 / Math.max(nodeCount, 1));
+  return {
+    simulationRepulsion: clamp(1.7 * k, 1.7, 10),
+    simulationLinkDistance: clamp(16 * k, 16, 70),
+    simulationCluster: clamp(0.12 / k, 0.03, 0.12),
+    simulationGravity: clamp(0.22 / k, 0.08, 0.22),
+    simulationCenter: clamp(0.2 / k, 0.08, 0.2),
+  };
+}
+
 interface MemoryMapCanvasProps {
   data: MemoryGraphData;
   agentFilter: string | null;
@@ -100,18 +121,24 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
       clusters[i] = ai;
 
       const isAgent = n.type === 'Agent';
+      // An agent anchor with no memories yet is kept for the legend but not drawn.
+      const hidden = isAgent && degree[i] === 0;
       // Fresh memories glow, old ones fade toward the background.
       const recency = tMax > tMin ? (ingestion[i] - tMin) / (tMax - tMin) : 1;
       const [cr, cg, cb, ca] = isAgent
-        ? hexToRgba('#f8f8fb', 1)
+        ? hexToRgba('#f8f8fb', hidden ? 0 : 1)
         : hexToRgba(agentColor(agentIds, owner), 0.45 + 0.5 * recency);
       baseColors.set([cr, cg, cb, ca], i * 4);
-      sizes[i] = isAgent ? 22 : 3.5 + Math.log2(1 + degree[i]) * 2.4;
+      sizes[i] = hidden ? 0 : isAgent ? 22 : 3.5 + Math.log2(1 + degree[i]) * 2.4;
     });
 
-    // Label candidates: agent anchors + highest-degree memories.
-    const labelIndices = data.nodes
+    const visibleIndices = data.nodes
       .map((_, i) => i)
+      .filter(i => sizes[i] > 0);
+
+    // Label candidates: agent anchors + highest-degree memories.
+    const labelIndices = visibleIndices
+      .slice()
       .sort((a, b) => (data.nodes[a].type === 'Agent' ? 1e9 : degree[a]) < (data.nodes[b].type === 'Agent' ? 1e9 : degree[b]) ? 1 : -1)
       .slice(0, LABEL_COUNT);
 
@@ -120,7 +147,8 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
       positions, clusters, baseColors, sizes,
       links: new Float32Array(linkPairs),
       nodes: data.nodes,
-      ingestion, labelIndices,
+      ingestion, labelIndices, visibleIndices,
+      physics: physicsFor(visibleIndices.length),
     };
   }, [data]);
 
@@ -131,12 +159,8 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
     const graph = new Graph(hostRef.current, {
       backgroundColor: [0, 0, 0, 0], // CSS background shows through
       spaceSize: SPACE,
-      simulationGravity: 0.22,
-      simulationCenter: 0.2,
-      simulationRepulsion: 1.7,
+      ...prepared.physics,
       simulationLinkSpring: 0.35,
-      simulationLinkDistance: 16,
-      simulationCluster: 0.12,
       simulationFriction: 0.88,
       simulationDecay: 6000,
       linkOpacity: 0.14,
@@ -155,9 +179,16 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
       },
       onSimulationEnd: () => {
         // Re-frame once the layout has cooled down and contracted.
-        graphRef.current?.fitView(500, 0.12);
+        fitVisible(500);
       },
     });
+
+    /** Frames only drawn points — hidden anchors must not stretch the view. */
+    function fitVisible(duration: number): void {
+      const g = graphRef.current;
+      if (!g) return;
+      g.fitViewByPointIndices(prepared.visibleIndices, duration, 0.12);
+    }
 
     graph.setPointPositions(prepared.positions);
     graph.setPointColors(prepared.baseColors);
@@ -166,9 +197,9 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
     graph.setPointClusters(prepared.clusters);
     graph.render();
     graph.start(1);
-    // Early fit while the simulation is still spreading the clusters;
-    // onSimulationEnd does the final framing.
-    const fitTimer = window.setTimeout(() => graph.fitView(600, 0.1), 900);
+    // Early fits while the simulation is still spreading/contracting the
+    // clusters; onSimulationEnd does the final framing.
+    const fitTimers = FIT_SCHEDULE_MS.map(ms => window.setTimeout(() => fitVisible(600), ms));
 
     graphRef.current = graph;
     if (import.meta.env.DEV) {
@@ -223,7 +254,7 @@ export function MemoryMapCanvas({ data, agentFilter, searchMatches, selectedId, 
     return () => {
       cancelAnimationFrame(raf);
       if (labelHost) labelHost.innerHTML = '';
-      window.clearTimeout(fitTimer);
+      fitTimers.forEach(id => window.clearTimeout(id));
       graphRef.current = null;
       graph.destroy();
     };
