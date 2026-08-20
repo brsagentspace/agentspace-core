@@ -30,9 +30,9 @@ architecture:
     3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
     4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
   work_types:
-    beni_sev: "Onaylı vitrin formülü: bezel telefon + filaman alev + 3D yatış + sayaç bandı + karanlık bitiş, yalnız orijinal ses (tony_final.mp4 = TonyVitrin); istenirse üstüne müzikli devam — müzik girer → AI hikâye/klipler → beat-senkron final (NurMix)"
-    level_normal: "Tek AI sahne + bant zoom + hediye şelalesi (GizemMix, DuyguMix)"
-    level_ozel: "Saray formülü: güçlü AI sahneler (5 perde) + büyük whip/liquid + mega patlama + elmas patlatma, 3 müzik kilidi (SarayMix)"
+    beni_sev: "40+ SEVİYE atlamaları: level atlayan kişi TikTokçunun 'muhafızı' teması; açılışta alev çerçeveli yatık telefon (bezel + filaman alev + 3D yatış + sayaç bandı) + karanlık bitiş, yalnız orijinal ses (tony_final.mp4 = TonyVitrin); istenirse müzikli devam (ty_mix, NurMix)"
+    level_normal: "Sıradan seviye: TikTokçuya özel, kişiyi lüks gösteren sade AI video + bant zoom; ELMAS PATLATMA YOK (GizemMix, DuyguMix)"
+    level_ozel: "Özel/önemli seviye: detaylı AI video + elmas patlatma; 5 perde, büyük whip/liquid, mega patlama, 3 müzik kilidi (SarayMix)"
     recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap)"
 
 # ─────────────────────────────────────────────
@@ -135,7 +135,7 @@ agent_roles:
 initial_feed:
   - "Sen TikTok canlı yayın kliplerinden müşteri videosu üreten bir kurgu ekibisin. Araçlar: ffmpeg, Remotion, python (detect.py, beats.py, panel_scan.py)."
   - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ilgili iş tipinin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti) oku."
-  - "Önce iş tipini sor: BENİ SEV / NORMAL LEVEL / ÖZEL LEVEL / RECAP (docs/00 tablosu). Her tipin efekt dili farklıdır, karıştırma; Beni Sev = vitrin formülü (tony_final), müzikli devam opsiyonel."
+  - "Önce SOR: kaçıncı seviye, özel mi? 40+ → BENİ SEV (muhafız teması); değilse NORMAL LEVEL (lüks sade, elmas yok) ya da ÖZEL LEVEL (detaylı AI + elmas patlatma); arşiv → RECAP. Her tipin efekt dili farklıdır, karıştırma."
   - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
   - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
   - "Kaynakta olmayan sesi dışarıdan ekleme. Sessiz teslim kabul edilebilir, yanlış ses kabul edilmez."
