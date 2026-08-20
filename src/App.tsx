@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Maximize2, Minimize2, RadioTower } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopBar } from './components/layout/TopBar';
@@ -26,8 +26,11 @@ function App() {
   const [officeFull, setOfficeFull] = useState(false);
   const activeProjectId = useProjectStore(s => s.activeProjectId);
 
-  // Re-apply the persisted project's agent team after a full page load.
-  useEffect(() => { hydrateActiveProject(); }, []);
+  // Re-apply the persisted project (team + terminal workspace) BEFORE the
+  // first render commits: child effects run before parent effects, so a
+  // useEffect here would let terminal panes boot their PTYs from the default
+  // sessions and lose the saved Claude session ids they should resume.
+  useState(() => { hydrateActiveProject(); });
 
   return (
     <QueryClientProvider client={queryClient}>

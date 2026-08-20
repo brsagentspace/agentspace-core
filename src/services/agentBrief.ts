@@ -128,17 +128,34 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
+/** Conversation persistence flags for claude (see services/claudeSessions). */
+export interface ClaudeSessionFlags {
+  sessionId: string;
+  mode: 'new' | 'resume';
+}
+
 /**
  * Engine launch line typed into the shell. Only claude can ingest the brief
  * natively (`--append-system-prompt-file`); codex/gemini get it via env.
- * `$AGENTSPACE_BRIEF` is left for the shell to expand.
+ * `$AGENTSPACE_BRIEF` is left for the shell to expand. With `session`,
+ * claude pins (`--session-id`) or continues (`--resume`) a conversation.
  */
-export function engineLaunchCommand(engine: string, ctx: BriefContext | null): string {
-  if (engine !== 'claude' || !ctx) return engine;
-  const parts = ['claude', '--append-system-prompt-file', '"$AGENTSPACE_BRIEF"'];
-  const vaults = (ctx.project.vaultPaths ?? []).map(p => p.trim()).filter(Boolean);
-  if (vaults.length > 0) {
-    parts.push('--add-dir', ...vaults.map(shellQuote));
+export function engineLaunchCommand(
+  engine: string,
+  ctx: BriefContext | null,
+  session?: ClaudeSessionFlags,
+): string {
+  if (engine !== 'claude') return engine;
+  const parts = ['claude'];
+  if (session) {
+    parts.push(session.mode === 'resume' ? '--resume' : '--session-id', session.sessionId);
+  }
+  if (ctx) {
+    parts.push('--append-system-prompt-file', '"$AGENTSPACE_BRIEF"');
+    const vaults = (ctx.project.vaultPaths ?? []).map(p => p.trim()).filter(Boolean);
+    if (vaults.length > 0) {
+      parts.push('--add-dir', ...vaults.map(shellQuote));
+    }
   }
   return parts.join(' ');
 }
