@@ -276,3 +276,109 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* ── Domain (software | media) ───────────────────────────────────────────── */
+
+.home-card-domain {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  border: 1px solid #2c2c3b;
+  color: #9090a2;
+}
+
+.home-card-domain--media {
+  color: #fbbf24;
+  border-color: #4a3a14;
+  background: #241d0c;
+}
+
+.home-card-domain--software {
+  color: #93c5fd;
+  border-color: #1f3050;
+  background: #121a28;
+}
+
+.home-card-path {
+  display: block;
+  margin-top: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #6b6b80;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-domains {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.home-domain {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  text-align: left;
+  background: #191922;
+  border: 1px solid #2c2c3b;
+  border-radius: 6px;
+  color: #c8c8d8;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.home-domain span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-domain small {
+  grid-column: 2;
+  font-size: 10px;
+  color: #9090a2;
+}
+
+.home-domain.selected {
+  border-color: #8b5cf6;
+  background: #241f38;
+  color: #fff;
+}
+
+.home-path-row {
+  display: flex;
+  gap: 6px;
+}
+
+.home-path-row .home-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.home-path-browse {
+  flex: none;
+  width: 36px;
+  display: grid;
+  place-items: center;
+  background: #191922;
+  border: 1px solid #2c2c3b;
+  border-radius: 4px;
+  color: #c8c8d8;
+  cursor: pointer;
+}
+
+.home-path-browse:hover {
+  border-color: #8b5cf6;
+}
+
+.home-hint {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  color: #6b6b80;
+  line-height: 1.4;
+}

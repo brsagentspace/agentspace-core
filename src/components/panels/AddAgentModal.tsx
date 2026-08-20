@@ -12,13 +12,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAgentSpaceStore } from '../../store';
-import { useProjectStore } from '../../store/projectStore';
+import { useProjectStore, projectDomain } from '../../store/projectStore';
+import { rolesForDomain, defaultRoleForDomain } from '../../lib/agentRoles';
 import { recordProjectMemory } from '../../services/memory/projectMemory';
 import { persistTeamNow } from '../../services/projectController';
 import type { Agent, AgentRole } from '../../types';
 import './AddAgentModal.css';
 
-const ROLES: AgentRole[] = ['architect', 'frontend', 'backend', 'qa', 'researcher', 'data', 'ml'];
 const CHAR_COUNT = 18;
 
 /** Character sheet geometry: idle-down first frame at (288, 32), 16×32 px, ×3 zoom. */
@@ -37,8 +37,11 @@ export function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
   const { t } = useTranslation('agents');
   const addAgent = useAgentSpaceStore(s => s.addAgent);
 
+  const domain = useProjectStore(s => projectDomain(s.projects.find(p => p.id === s.activeProjectId)));
+  const roles = rolesForDomain(domain);
+
   const [name, setName] = useState('');
-  const [role, setRole] = useState<AgentRole>('frontend');
+  const [role, setRole] = useState<AgentRole>(() => defaultRoleForDomain(domain));
   const [charIdx, setCharIdx] = useState(0);
 
   if (!isOpen) return null;
@@ -90,7 +93,7 @@ export function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
 
         <label className="add-agent-label">{t('add_agent.role_label')}</label>
         <div className="add-agent-roles">
-          {ROLES.map(r => (
+          {roles.map(r => (
             <button
               key={r}
               className={`add-agent-role ${r === role ? 'selected' : ''}`}

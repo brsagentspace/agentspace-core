@@ -12,7 +12,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Agent } from '../types';
+import type { Agent, SpaceDomain } from '../types';
 import type { TerminalSnapshot } from './terminalStore';
 
 export interface ProjectMeta {
@@ -23,6 +23,20 @@ export interface ProjectMeta {
   lastOpenedAt: string;
   /** Seed the memory map with the demo graph (set at creation) */
   demoMemory?: boolean;
+  /** What kind of work this Space hosts; legacy records are 'software' */
+  domain?: SpaceDomain;
+  /**
+   * Working directory on this machine (terminal cwd, default vault root).
+   * Only the PATH is stored — never project files; the repo is public.
+   */
+  rootPath?: string;
+  /** Markdown folders loaded into the memory map (absolute paths) */
+  vaultPaths?: string[];
+}
+
+/** Domain of a project, tolerant of records created before the field existed. */
+export function projectDomain(meta: ProjectMeta | undefined | null): SpaceDomain {
+  return meta?.domain ?? 'software';
 }
 
 interface ProjectState {
@@ -38,6 +52,7 @@ interface ProjectState {
   saveAgents: (projectId: string, agents: Agent[]) => void;
   saveTerminal: (projectId: string, snap: TerminalSnapshot) => void;
   touchProject: (id: string) => void;
+  updateProject: (id: string, patch: Partial<Omit<ProjectMeta, 'id'>>) => void;
   deleteProject: (id: string) => void;
 }
 
@@ -72,6 +87,11 @@ export const useProjectStore = create<ProjectState>()(
           projects: s.projects.map((p) =>
             p.id === id ? { ...p, lastOpenedAt: new Date().toISOString() } : p,
           ),
+        })),
+
+      updateProject: (id, patch) =>
+        set((s) => ({
+          projects: s.projects.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         })),
 
       deleteProject: (id) =>

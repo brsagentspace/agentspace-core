@@ -11,19 +11,19 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, FolderGit2 } from 'lucide-react';
-import { useProjectStore } from '../../store/projectStore';
+import { Plus, Trash2, FolderGit2, Clapperboard, Code2, FolderOpen } from 'lucide-react';
+import { useProjectStore, projectDomain } from '../../store/projectStore';
 import { createProject, openProject } from '../../services/projectController';
+import { blueprintsForDomain } from '../../lib/blueprintCatalog';
+import { pickDirectory } from '../../services/platform';
+import type { SpaceDomain } from '../../types';
 import './HomeScreen.css';
 
-const BLUEPRINTS = [
-  'web-nextjs-fullstack',
-  'backend-node-microservice',
-  'backend-rust-service',
-  'ml-python-pipeline',
-  'mobile-react-native',
-  'marketing-gtm-agent',
-];
+const DOMAINS: SpaceDomain[] = ['software', 'media'];
+
+function DomainIcon({ domain, size = 15 }: { domain: SpaceDomain; size?: number }) {
+  return domain === 'media' ? <Clapperboard size={size} /> : <Code2 size={size} />;
+}
 
 /** Pixel mascot: premade character idle-down frame, CSS-cropped at 3x. */
 function PixelMascot() {
@@ -45,13 +45,27 @@ export function HomeScreen() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [name, setName] = useState('');
-  const [blueprint, setBlueprint] = useState(BLUEPRINTS[0]);
+  const [domain, setDomain] = useState<SpaceDomain>('software');
+  const [blueprint, setBlueprint] = useState(blueprintsForDomain('software')[0].id);
+  const [rootPath, setRootPath] = useState('');
   const [starterTeam, setStarterTeam] = useState(true);
+
+  const blueprints = blueprintsForDomain(domain);
+
+  const selectDomain = (next: SpaceDomain) => {
+    setDomain(next);
+    setBlueprint(blueprintsForDomain(next)[0].id);
+  };
+
+  const browseRoot = async () => {
+    const picked = await pickDirectory(rootPath || undefined);
+    if (picked) setRootPath(picked);
+  };
 
   const submit = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    createProject(trimmed, blueprint, starterTeam);
+    createProject({ name: trimmed, blueprint, domain, rootPath, withStarterTeam: starterTeam });
   };
 
   return (
@@ -77,8 +91,11 @@ export function HomeScreen() {
             {projects.map(p => (
               <div key={p.id} className="home-card" onClick={() => openProject(p.id)}>
                 <div className="home-card-head">
-                  <FolderGit2 size={15} />
+                  {p.rootPath ? <FolderGit2 size={15} /> : <DomainIcon domain={projectDomain(p)} />}
                   <span className="home-card-name">{p.name}</span>
+                  <span className={`home-card-domain home-card-domain--${projectDomain(p)}`}>
+                    {t(`home.domain_${projectDomain(p)}`)}
+                  </span>
                   <button
                     className="home-card-delete"
                     title={t('home.delete_tooltip')}
@@ -88,6 +105,7 @@ export function HomeScreen() {
                   </button>
                 </div>
                 <span className="home-card-blueprint">{p.blueprint}</span>
+                {p.rootPath && <span className="home-card-path" title={p.rootPath}>{p.rootPath}</span>}
                 <div className="home-card-meta">
                   <span>{t('home.agents_count', { count: (agentsByProject[p.id] ?? []).length })}</span>
                   <span>{t('home.last_opened', { date: p.lastOpenedAt.slice(0, 10) })}</span>
@@ -116,18 +134,48 @@ export function HomeScreen() {
               onKeyDown={e => e.key === 'Enter' && submit()}
             />
 
-            <label className="home-label">{t('home.blueprint_label')}</label>
-            <div className="home-blueprints">
-              {BLUEPRINTS.map(bp => (
+            <label className="home-label">{t('home.domain_label')}</label>
+            <div className="home-domains">
+              {DOMAINS.map(d => (
                 <button
-                  key={bp}
-                  className={`home-bp ${bp === blueprint ? 'selected' : ''}`}
-                  onClick={() => setBlueprint(bp)}
+                  key={d}
+                  className={`home-domain ${d === domain ? 'selected' : ''}`}
+                  onClick={() => selectDomain(d)}
                 >
-                  {bp}
+                  <DomainIcon domain={d} size={14} />
+                  <span>{t(`home.domain_${d}`)}</span>
+                  <small>{t(`home.domain_${d}_hint`)}</small>
                 </button>
               ))}
             </div>
+
+            <label className="home-label">{t('home.blueprint_label')}</label>
+            <div className="home-blueprints">
+              {blueprints.map(bp => (
+                <button
+                  key={bp.id}
+                  className={`home-bp ${bp.id === blueprint ? 'selected' : ''}`}
+                  onClick={() => setBlueprint(bp.id)}
+                >
+                  {bp.id}
+                </button>
+              ))}
+            </div>
+
+            <label className="home-label">{t('home.root_label')}</label>
+            <div className="home-path-row">
+              <input
+                className="home-input"
+                value={rootPath}
+                placeholder={t('home.root_placeholder')}
+                spellCheck={false}
+                onChange={e => setRootPath(e.target.value)}
+              />
+              <button className="home-path-browse" type="button" onClick={browseRoot} title={t('home.root_browse')}>
+                <FolderOpen size={14} />
+              </button>
+            </div>
+            <p className="home-hint">{t('home.root_hint')}</p>
 
             <label className="home-check">
               <input

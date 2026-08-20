@@ -107,6 +107,7 @@ fn get_active_engine(state: State<ActiveEngine>) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(ActiveEngine(Mutex::new("claude".to_string())))
         .manage(pty::PtyManager::default())
         .invoke_handler(tauri::generate_handler![
