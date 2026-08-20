@@ -20,6 +20,8 @@ export interface MemoryGraphData {
   indexedChunks: number;
   /** Agents present in the graph: id → display name */
   agents: Record<string, string>;
+  /** Non-fatal load problems to surface in the UI (e.g. a vault that failed to scan) */
+  notices?: string[];
 }
 
 export interface MemoryStore {

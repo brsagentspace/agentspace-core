@@ -3,6 +3,7 @@
 
 mod cli_engine;
 mod pty;
+mod vault;
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
@@ -119,6 +120,7 @@ pub fn run() {
             pty::pty_write,
             pty::pty_resize,
             pty::pty_kill,
+            vault::vault_scan,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentSpace");

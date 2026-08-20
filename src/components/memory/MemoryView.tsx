@@ -11,15 +11,31 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FolderPlus, X } from 'lucide-react';
 import { agentColor } from '../../services/memory/MemoryStore';
 import type { MemoryGraphData } from '../../services/memory/MemoryStore';
 import { loadProjectMemory } from '../../services/memory/projectMemory';
 import { BM25Index } from '../../services/rag/BM25Index';
 import { useProjectStore } from '../../store/projectStore';
+import { IS_TAURI, pickDirectory } from '../../services/platform';
 import { useAgentSpaceStore } from '../../store';
 import { useMemoryJournalStore } from '../../store/memoryJournalStore';
 import { MemoryMapCanvas } from './MemoryMapCanvas';
 import './MemoryView.css';
+
+const EMPTY_PATHS: string[] = [];
+
+/** Turns a loader notice code into a human line. */
+function noticeText(code: string, t: (k: string, o?: Record<string, unknown>) => string): string {
+  if (code === 'vault_desktop_only') return t('vault_desktop_only');
+  if (code.startsWith('vault_capped:')) return t('vault_capped', { path: code.slice('vault_capped:'.length) });
+  if (code.startsWith('vault_error:')) {
+    const rest = code.slice('vault_error:'.length);
+    const idx = rest.indexOf(':');
+    return t('vault_error', { path: rest.slice(0, idx), error: rest.slice(idx + 1) });
+  }
+  return code;
+}
 
 export function MemoryView() {
   const { t } = useTranslation('memory');
@@ -35,6 +51,30 @@ export function MemoryView() {
   const demoMemory = useProjectStore(
     s => s.projects.find(p => p.id === s.activeProjectId)?.demoMemory ?? true,
   );
+  const vaultPaths = useProjectStore(
+    s => s.projects.find(p => p.id === s.activeProjectId)?.vaultPaths ?? EMPTY_PATHS,
+  );
+  const updateProject = useProjectStore(s => s.updateProject);
+  const [vaultDraft, setVaultDraft] = useState<string | null>(null);
+
+  const addVault = (raw: string) => {
+    const path = raw.trim().replace(/\/+$/, '');
+    if (!projectId || !path || vaultPaths.includes(path)) return;
+    updateProject(projectId, { vaultPaths: [...vaultPaths, path] });
+    setVaultDraft(null);
+  };
+  const removeVault = (path: string) => {
+    if (!projectId) return;
+    updateProject(projectId, { vaultPaths: vaultPaths.filter(p => p !== path) });
+  };
+  const onAddVaultClick = async () => {
+    if (IS_TAURI) {
+      const picked = await pickDirectory();
+      if (picked) addVault(picked);
+    } else {
+      setVaultDraft(prev => (prev === null ? '' : null));
+    }
+  };
   // Stable team key: ignores status churn, changes when members change.
   const teamKey = useAgentSpaceStore(s => s.agents.map(a => `${a.id}:${a.name}`).join('|'));
   const journalCount = useMemoryJournalStore(
@@ -44,11 +84,11 @@ export function MemoryView() {
   useEffect(() => {
     let alive = true;
     const team = useAgentSpaceStore.getState().agents;
-    loadProjectMemory(projectId, team, demoMemory)
+    loadProjectMemory(projectId, team, demoMemory, vaultPaths)
       .then(d => { if (alive) setData(d); })
       .catch(e => { if (alive) setError(String(e)); });
     return () => { alive = false; };
-  }, [projectId, demoMemory, teamKey, journalCount]);
+  }, [projectId, demoMemory, teamKey, journalCount, vaultPaths]);
 
   const agentIds = useMemo(() => Object.keys(data?.agents ?? {}), [data]);
 
@@ -163,7 +203,42 @@ export function MemoryView() {
             {timeCutoff === null ? t('time_now') : new Date(timeCutoff).toISOString().slice(0, 10)}
           </span>
         </div>
+
+        <div className="memory-vaults" title={t('vault_hint')}>
+          <span className="memory-vaults-label">{t('vault_label')}</span>
+          {vaultPaths.map(path => (
+            <span key={path} className="memory-vault-chip" title={path}>
+              {path.split('/').filter(Boolean).slice(-2).join('/')}
+              <button className="memory-vault-remove" onClick={() => removeVault(path)} title={t('vault_remove')}>
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+          {vaultDraft !== null && (
+            <input
+              className="memory-vault-input"
+              autoFocus
+              value={vaultDraft}
+              placeholder={t('vault_placeholder')}
+              spellCheck={false}
+              onChange={e => setVaultDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') addVault(vaultDraft);
+                if (e.key === 'Escape') setVaultDraft(null);
+              }}
+            />
+          )}
+          <button className="memory-vault-add" onClick={onAddVaultClick} disabled={!projectId}>
+            <FolderPlus size={12} /> {t('vault_add')}
+          </button>
+        </div>
       </div>
+
+      {data?.notices && data.notices.length > 0 && (
+        <div className="memory-notices">
+          {data.notices.map(code => <div key={code}>⚠ {noticeText(code, t)}</div>)}
+        </div>
+      )}
 
       <div className="memory-body">
         {data ? (
@@ -218,6 +293,15 @@ export function MemoryView() {
                 <dd>{selectedNode.timestamps.validTime.slice(0, 10)}</dd>
                 <dt>{t('panel_ingestion_time')}</dt>
                 <dd>{selectedNode.timestamps.ingestionTime.slice(0, 10)}</dd>
+                {typeof selectedNode.attributes.relPath === 'string' && (
+                  <>
+                    <dt>{t('panel_source')}</dt>
+                    <dd className="memory-detail-path" title={String(selectedNode.attributes.path)}>
+                      {selectedNode.attributes.relPath as string}
+                      {typeof selectedNode.attributes.heading === 'string' && ` › ${selectedNode.attributes.heading}`}
+                    </dd>
+                  </>
+                )}
               </dl>
               <div className="memory-detail-links-title">
                 {t('panel_links')} · {selectedLinks.length}

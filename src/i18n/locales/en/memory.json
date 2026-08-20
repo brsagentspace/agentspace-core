@@ -17,5 +17,14 @@
   "loading": "Loading memory graph…",
   "canvas_placeholder": "Memory map renders here (Phase 2)",
   "time_now": "now",
-  "time_tooltip": "Time travel: hide memories recorded after this date"
+  "time_tooltip": "Time travel: hide memories recorded after this date",
+  "vault_label": "VAULT",
+  "vault_add": "Add folder",
+  "vault_remove": "Remove vault",
+  "vault_placeholder": "/Users/you/notes (Enter)",
+  "vault_hint": "Markdown folders: file = node, ## section = child node, [[link]] = edge",
+  "vault_desktop_only": "Markdown vaults load only in the desktop app (npm run tauri dev).",
+  "vault_capped": "{{path}}: file cap reached, some notes were skipped.",
+  "vault_error": "{{path}} failed to load: {{error}}",
+  "panel_source": "Source"
 }
