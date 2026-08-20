@@ -43,8 +43,20 @@ pub fn pty_spawn(
 
     let mut cmd = CommandBuilder::new(default_shell());
     cmd.arg("-l");
+    // Space working folder → shell cwd. A missing folder falls back to the
+    // user's home so the pane still opens; the frontend is told why.
     if let Some(dir) = cwd {
-        cmd.cwd(dir);
+        if std::path::Path::new(&dir).is_dir() {
+            cmd.cwd(dir);
+        } else {
+            let _ = app.emit(
+                "pty-output",
+                json!({
+                    "id": id,
+                    "data": format!("\x1b[38;2;251;191;36m⚠ Çalışma klasörü bulunamadı: {} — ev dizininde açıldı.\x1b[0m\r\n", dir)
+                }),
+            );
+        }
     }
 
     let child = pty.slave.spawn_command(cmd).map_err(|e| e.to_string())?;

@@ -34,6 +34,12 @@ export interface ProjectMeta {
   vaultPaths?: string[];
 }
 
+/** Working folder of the open Space, or null when unset (read outside React). */
+export function activeProjectRootPath(): string | null {
+  const { projects, activeProjectId } = useProjectStore.getState();
+  return projects.find(p => p.id === activeProjectId)?.rootPath?.trim() || null;
+}
+
 /** Domain of a project, tolerant of records created before the field existed. */
 export function projectDomain(meta: ProjectMeta | undefined | null): SpaceDomain {
   return meta?.domain ?? 'software';
