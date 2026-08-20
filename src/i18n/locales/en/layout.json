@@ -50,6 +50,15 @@
     "submit": "Create",
     "agents_count": "{{count}} agents",
     "last_opened": "last opened {{date}}",
-    "delete_tooltip": "Delete project"
+    "delete_tooltip": "Delete project",
+    "domain_label": "Domain",
+    "domain_software": "Software",
+    "domain_media": "Media",
+    "domain_software_hint": "Code, product, architecture",
+    "domain_media_hint": "Video / audio production, client work",
+    "root_label": "Working folder",
+    "root_placeholder": "/Users/you/project (optional)",
+    "root_browse": "Choose folder",
+    "root_hint": "Terminals open here and the memory map reads notes from it. Only the path is stored — files never enter the repo."
   }
 }

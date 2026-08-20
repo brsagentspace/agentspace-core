@@ -6,7 +6,10 @@
     "qa": "QA Mühendisi",
     "researcher": "Araştırmacı",
     "data": "Veri Analisti",
-    "ml": "ML Mühendisi"
+    "ml": "ML Mühendisi",
+    "analyst": "Analist",
+    "editor": "Kurgucu",
+    "sound": "Ses Tasarımcısı"
   },
   "add_agent": {
     "button": "Ajan Ekle",

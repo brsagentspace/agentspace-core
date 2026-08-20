@@ -197,10 +197,12 @@ const DOORS: [number, number][] = [
 const ROLE_ROOM: Record<string, string> = {
   architect: 'architect', researcher: 'research', data: 'data',
   qa: 'experiment', frontend: 'writing', backend: 'writing', ml: 'data',
+  analyst: 'research', editor: 'writing', sound: 'experiment',
 };
 const ROLE_CHAR: Record<string, string> = {
   architect: 'c1', frontend: 'c2', backend: 'c3', qa: 'c4',
   researcher: 'c5', data: 'c6', ml: 'c7',
+  analyst: 'c9', editor: 'c10', sound: 'c11',
 };
 
 // ─── Agent visual state ───────────────────────────────────────────────────────

@@ -6,7 +6,10 @@
     "qa": "QA Engineer",
     "researcher": "Researcher",
     "data": "Data Analyst",
-    "ml": "ML Engineer"
+    "ml": "ML Engineer",
+    "analyst": "Analyst",
+    "editor": "Editor",
+    "sound": "Sound Designer"
   },
   "add_agent": {
     "button": "Add Agent",

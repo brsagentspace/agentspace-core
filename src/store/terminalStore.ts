@@ -12,6 +12,7 @@
 import { create } from 'zustand';
 import type { MosaicNode } from 'react-mosaic-component';
 import { useSettingsStore } from './settingsStore';
+import type { Agent } from '../types';
 
 export interface TerminalSession {
   id: string;
@@ -38,7 +39,8 @@ interface TerminalState {
   /** Switches a session's CLI engine (caller restarts its terminal). */
   setSessionEngine: (id: string, engine: string) => void;
   /** Restores the default workspace (used when switching projects). */
-  resetToDefault: () => void;
+  /** Rebuilds the workspace — one pane per agent when a team is given. */
+  resetToDefault: (team?: Agent[]) => void;
   /** Restores a previously saved workspace snapshot (project switching). */
   restoreSnapshot: (snap: TerminalSnapshot) => void;
 }
@@ -72,6 +74,32 @@ const defaultTree = (): MosaicNode<string> => ({
     'backend',
   ],
 });
+
+const AGENT_COLOR_HEX: Record<string, string> = {
+  blue: '#3b82f6', yellow: '#f59e0b', red: '#ef4444', green: '#10b981',
+};
+
+/** Team-driven workspace: one pane per agent (first three), 2-over-1 layout. */
+function teamWorkspace(team: Agent[]): { sessions: Record<string, TerminalSession>; tree: MosaicNode<string> } {
+  const cmd = engineCommand();
+  const members = team.slice(0, 3);
+  const sessions: Record<string, TerminalSession> = {};
+  members.forEach((a, i) => {
+    const id = `agent_pane_${i + 1}`;
+    sessions[id] = {
+      id, agentId: a.id, title: a.name,
+      statusColor: AGENT_COLOR_HEX[a.color] ?? '#8b5cf6',
+      command: cmd, engine: cmd,
+    };
+  });
+  const ids = Object.keys(sessions);
+  const tree: MosaicNode<string> = ids.length === 3
+    ? { type: 'split', direction: 'column', children: [{ type: 'split', direction: 'row', children: [ids[0], ids[1]] }, ids[2]] }
+    : ids.length === 2
+      ? { type: 'split', direction: 'row', children: [ids[0], ids[1]] }
+      : ids[0];
+  return { sessions, tree };
+}
 
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   sessions: defaultSessions(),
@@ -119,13 +147,19 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       };
     }),
 
-  resetToDefault: () =>
+  resetToDefault: (team) => {
+    if (team && team.length > 0) {
+      const { sessions, tree } = teamWorkspace(team);
+      set({ sessions, mosaicNodes: tree, zoomedId: null, nextIndex: 1 });
+      return;
+    }
     set({
       sessions: defaultSessions(),
       mosaicNodes: defaultTree(),
       zoomedId: null,
       nextIndex: 1,
-    }),
+    });
+  },
 
   restoreSnapshot: (snap) =>
     set({

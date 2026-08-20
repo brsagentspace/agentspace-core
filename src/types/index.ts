@@ -2,7 +2,14 @@
 
 export type AgentStatus = "idle" | "walking" | "working" | "thinking" | "done" | "blocked";
 
-export type AgentRole = "architect" | "frontend" | "backend" | "qa" | "researcher" | "data" | "ml";
+export type AgentRole =
+  // software domain
+  | "architect" | "frontend" | "backend" | "qa" | "researcher" | "data" | "ml"
+  // media domain (video / audio production)
+  | "analyst" | "editor" | "sound";
+
+/** Which kind of work a Space hosts; drives blueprints, roles and starter teams. */
+export type SpaceDomain = "software" | "media";
 
 export type ModelTier = 1 | 2 | 3;
 

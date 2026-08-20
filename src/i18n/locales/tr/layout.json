@@ -50,6 +50,15 @@
     "submit": "Oluştur",
     "agents_count": "{{count}} ajan",
     "last_opened": "son açılış {{date}}",
-    "delete_tooltip": "Projeyi sil"
+    "delete_tooltip": "Projeyi sil",
+    "domain_label": "Alan",
+    "domain_software": "Yazılım",
+    "domain_media": "Medya",
+    "domain_software_hint": "Kod, ürün, mimari",
+    "domain_media_hint": "Video / ses üretimi, müşteri işi",
+    "root_label": "Çalışma klasörü",
+    "root_placeholder": "/Users/sen/proje (isteğe bağlı)",
+    "root_browse": "Klasör seç",
+    "root_hint": "Terminaller burada açılır, hafıza haritası buradaki notları okur. Yalnızca yol saklanır — dosyalar repoya girmez."
   }
 }
