@@ -462,3 +462,12 @@
 .sessions-row:hover .sessions-row-go {
   color: #a78bfa;
 }
+
+/* Restart after the pane's process ended */
+.term-action-restart {
+  color: #f87171;
+}
+
+.term-action-restart:hover {
+  color: #fca5a5;
+}

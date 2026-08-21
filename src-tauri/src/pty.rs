@@ -47,6 +47,30 @@ fn default_shell() -> (String, Vec<String>) {
     (shell.to_string(), vec!["-NoLogo".to_string()])
 }
 
+/// Length of the incomplete UTF-8 sequence at the end of `buf` (0..=3).
+///
+/// PTY reads cut the byte stream anywhere, so a multi-byte character (Turkish
+/// letters are 2 bytes, box drawing 3, emoji 4) regularly straddles two reads.
+/// Decoding each read on its own turned those into U+FFFD — and a 2-cell emoji
+/// becoming several 1-cell replacement glyphs shifts the cursor, which is what
+/// TUI apps (Claude Code, Codex) then paint their whole frame around.
+fn incomplete_utf8_tail(buf: &[u8]) -> usize {
+    for back in 1..=buf.len().min(3) {
+        let b = buf[buf.len() - back];
+        if b & 0b1100_0000 == 0b1000_0000 {
+            continue; // continuation byte — keep looking for the lead byte
+        }
+        let need = match b {
+            b if b & 0b1110_0000 == 0b1100_0000 => 2,
+            b if b & 0b1111_0000 == 0b1110_0000 => 3,
+            b if b & 0b1111_1000 == 0b1111_0000 => 4,
+            _ => 1,
+        };
+        return if need > back { back } else { 0 };
+    }
+    0
+}
+
 /// Session ids come from the frontend; keep the brief file name boring.
 fn safe_file_stem(id: &str) -> String {
     id.chars()
@@ -89,6 +113,15 @@ pub fn pty_spawn(
     for arg in shell_args {
         cmd.arg(arg);
     }
+    // The emulator is xterm.js with truecolor, whatever launched the app
+    // (from the Dock there is no TERM/LANG at all; from tmux the wrong TERM).
+    cmd.env("TERM", "xterm-256color");
+    cmd.env("COLORTERM", "truecolor");
+    cmd.env("TERM_PROGRAM", "AgentSpace");
+    cmd.env_remove("TMUX");
+    if std::env::var_os("LANG").is_none() && std::env::var_os("LC_ALL").is_none() {
+        cmd.env("LANG", "en_US.UTF-8");
+    }
     // Space / agent context for whatever runs inside the shell.
     for (key, value) in env.unwrap_or_default() {
         cmd.env(key, value);
@@ -128,14 +161,26 @@ pub fn pty_spawn(
     let reader_app = app.clone();
     std::thread::spawn(move || {
         let mut buf = [0u8; 8192];
+        // Bytes of a character cut off by the previous read, completed by the next.
+        let mut pending: Vec<u8> = Vec::new();
         loop {
             match reader.read(&mut buf) {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
-                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
+                    pending.extend_from_slice(&buf[..n]);
+                    let cut = pending.len() - incomplete_utf8_tail(&pending);
+                    if cut == 0 {
+                        continue;
+                    }
+                    let data = String::from_utf8_lossy(&pending[..cut]).into_owned();
+                    pending.drain(..cut);
                     let _ = reader_app.emit("pty-output", json!({ "id": reader_id, "data": data }));
                 }
             }
+        }
+        if !pending.is_empty() {
+            let data = String::from_utf8_lossy(&pending).into_owned();
+            let _ = reader_app.emit("pty-output", json!({ "id": reader_id, "data": data }));
         }
         let _ = reader_app.emit("pty-exit", json!({ "id": reader_id }));
     });
@@ -171,4 +216,43 @@ pub fn pty_kill(state: State<PtyManager>, id: String) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::incomplete_utf8_tail;
+
+    #[test]
+    fn complete_ascii_has_no_tail() {
+        assert_eq!(incomplete_utf8_tail(b"hello"), 0);
+        assert_eq!(incomplete_utf8_tail(b""), 0);
+    }
+
+    #[test]
+    fn complete_multibyte_has_no_tail() {
+        assert_eq!(incomplete_utf8_tail("başlamış".as_bytes()), 0);
+        assert_eq!(incomplete_utf8_tail("⏺ ok ✅".as_bytes()), 0);
+        assert_eq!(incomplete_utf8_tail("🤔".as_bytes()), 0);
+    }
+
+    #[test]
+    fn cut_sequences_are_held_back() {
+        let s = "ş".as_bytes(); // 2 bytes
+        assert_eq!(incomplete_utf8_tail(&s[..1]), 1);
+        let e = "✅".as_bytes(); // 3 bytes
+        assert_eq!(incomplete_utf8_tail(&e[..1]), 1);
+        assert_eq!(incomplete_utf8_tail(&e[..2]), 2);
+        let m = "🤔".as_bytes(); // 4 bytes
+        assert_eq!(incomplete_utf8_tail(&m[..1]), 1);
+        assert_eq!(incomplete_utf8_tail(&m[..2]), 2);
+        assert_eq!(incomplete_utf8_tail(&m[..3]), 3);
+        let mut text = b"abc ".to_vec();
+        text.extend_from_slice(&m[..2]);
+        assert_eq!(incomplete_utf8_tail(&text), 2);
+    }
+
+    #[test]
+    fn stray_continuation_bytes_are_flushed_not_held() {
+        assert_eq!(incomplete_utf8_tail(&[0x80, 0x80, 0x80, 0x80]), 0);
+    }
 }
