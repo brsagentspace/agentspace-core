@@ -20,7 +20,7 @@ asset_discipline:
 
   forbidden:
     - "Müşteri videosu, ekran kaydı veya kişisel verisi public repoya commit edilemez"
-    - "İnternetten jenerik SFX/müzik indirip müşteri işine eklemek — kaynakta yoksa sessiz teslim"
+    - "İnternetten JENERİK stok SFX/müzik indirip müşteri işine eklemek (müşterinin verdiği müzik ve hediyenin gerçek TikTok sesi bu yasağın DIŞINDADIR — video-edit-tiktok docs/10)"
     - "Lisansı belirsiz font, görsel, ses kullanımı"
     - "Onaysız yayın — müşteri onayı olmadan çıktı paylaşılmaz"
 
