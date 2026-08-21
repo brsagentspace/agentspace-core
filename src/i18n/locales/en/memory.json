@@ -19,6 +19,7 @@
   "time_now": "now",
   "time_tooltip": "Time travel: hide memories recorded after this date",
   "vault_label": "VAULT",
+  "vault_root": "Working folder (implicit vault)",
   "vault_add": "Add folder",
   "vault_remove": "Remove vault",
   "vault_placeholder": "/Users/you/notes (Enter)",

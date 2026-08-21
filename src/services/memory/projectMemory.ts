@@ -26,6 +26,26 @@ function remapAgentId(seedId: string, team: Agent[]): string | null {
   return direct?.id ?? null;
 }
 
+/** Trims and strips trailing slashes so the same folder written two ways dedupes. */
+function normalizeVaultPath(raw: string): string {
+  const p = raw.trim().replace(/\/+$/, '');
+  return p;
+}
+
+/**
+ * Folders the memory map should index for a Space: the working folder is an
+ * implicit vault (the "new project" hint promises the map reads notes there),
+ * followed by the explicitly added vaults. A folder nested inside another listed
+ * folder is dropped — otherwise every note under it is indexed twice (the old
+ * Amon-tiktok Space listed the repo root plus docs/skills/templates: 666 nodes
+ * for ~330 notes).
+ */
+export function effectiveVaultPaths(rootPath: string | undefined, vaultPaths: string[]): string[] {
+  const candidates = [rootPath ?? '', ...vaultPaths].map(normalizeVaultPath).filter(Boolean);
+  const unique = candidates.filter((p, i) => candidates.indexOf(p) === i);
+  return unique.filter(p => !unique.some(other => other !== p && p.startsWith(`${other}/`)));
+}
+
 export async function loadProjectMemory(
   projectId: string | null,
   team: Agent[],

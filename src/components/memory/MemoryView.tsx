@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { FolderPlus, X } from 'lucide-react';
 import { agentColor } from '../../services/memory/MemoryStore';
 import type { MemoryGraphData } from '../../services/memory/MemoryStore';
-import { loadProjectMemory } from '../../services/memory/projectMemory';
+import { loadProjectMemory, effectiveVaultPaths } from '../../services/memory/projectMemory';
 import { BM25Index } from '../../services/rag/BM25Index';
 import { useProjectStore } from '../../store/projectStore';
 import { IS_TAURI, pickDirectory } from '../../services/platform';
@@ -54,6 +54,12 @@ export function MemoryView() {
   const vaultPaths = useProjectStore(
     s => s.projects.find(p => p.id === s.activeProjectId)?.vaultPaths ?? EMPTY_PATHS,
   );
+  const rootPath = useProjectStore(
+    s => s.projects.find(p => p.id === s.activeProjectId)?.rootPath?.trim() || '',
+  );
+  // Working folder is an implicit vault; nested duplicates are dropped (#63).
+  const effectiveVaults = useMemo(() => effectiveVaultPaths(rootPath, vaultPaths), [rootPath, vaultPaths]);
+  const effectiveKey = effectiveVaults.join(':');
   const updateProject = useProjectStore(s => s.updateProject);
   const [vaultDraft, setVaultDraft] = useState<string | null>(null);
 
@@ -84,11 +90,13 @@ export function MemoryView() {
   useEffect(() => {
     let alive = true;
     const team = useAgentSpaceStore.getState().agents;
-    loadProjectMemory(projectId, team, demoMemory, vaultPaths)
+    loadProjectMemory(projectId, team, demoMemory, effectiveVaults)
       .then(d => { if (alive) setData(d); })
       .catch(e => { if (alive) setError(String(e)); });
     return () => { alive = false; };
-  }, [projectId, demoMemory, teamKey, journalCount, vaultPaths]);
+    // effectiveKey stands in for effectiveVaults (stable string, no array identity churn)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, demoMemory, teamKey, journalCount, effectiveKey]);
 
   const agentIds = useMemo(() => Object.keys(data?.agents ?? {}), [data]);
 
@@ -206,6 +214,11 @@ export function MemoryView() {
 
         <div className="memory-vaults" title={t('vault_hint')}>
           <span className="memory-vaults-label">{t('vault_label')}</span>
+          {rootPath && (
+            <span className="memory-vault-chip memory-vault-chip--root" title={`${t('vault_root')}: ${rootPath}`}>
+              {rootPath.split('/').filter(Boolean).slice(-2).join('/')}
+            </span>
+          )}
           {vaultPaths.map(path => (
             <span key={path} className="memory-vault-chip" title={path}>
               {path.split('/').filter(Boolean).slice(-2).join('/')}
