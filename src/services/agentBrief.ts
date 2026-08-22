@@ -123,9 +123,31 @@ export function buildAgentEnv(ctx: BriefContext): Record<string, string> {
   return env;
 }
 
+/**
+ * The pane shell differs per host: `$SHELL -l` on macOS/Linux, PowerShell on
+ * Windows (see src-tauri/src/pty.rs). Quoting and env expansion follow it.
+ */
+export function isWindowsHost(): boolean {
+  return typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+}
+
 /** POSIX single-quote escaping for paths that may contain spaces/quotes. */
-function shellQuote(value: string): string {
+function posixQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/** PowerShell single-quote escaping (only `'` is special, doubled). */
+function powershellQuote(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function shellQuote(value: string): string {
+  return isWindowsHost() ? powershellQuote(value) : posixQuote(value);
+}
+
+/** Reference to the brief path env var in the pane shell's own syntax. */
+function briefEnvRef(): string {
+  return isWindowsHost() ? '"$env:AGENTSPACE_BRIEF"' : '"$AGENTSPACE_BRIEF"';
 }
 
 /** Conversation persistence flags for claude (see services/claudeSessions). */
@@ -137,7 +159,7 @@ export interface ClaudeSessionFlags {
 /**
  * Engine launch line typed into the shell. Only claude can ingest the brief
  * natively (`--append-system-prompt-file`); codex/gemini get it via env.
- * `$AGENTSPACE_BRIEF` is left for the shell to expand. With `session`,
+ * `$AGENTSPACE_BRIEF` (`$env:` on Windows) is left for the shell to expand. With `session`,
  * claude pins (`--session-id`) or continues (`--resume`) a conversation.
  */
 export function engineLaunchCommand(
@@ -151,7 +173,7 @@ export function engineLaunchCommand(
     parts.push(session.mode === 'resume' ? '--resume' : '--session-id', session.sessionId);
   }
   if (ctx) {
-    parts.push('--append-system-prompt-file', '"$AGENTSPACE_BRIEF"');
+    parts.push('--append-system-prompt-file', briefEnvRef());
     const vaults = (ctx.project.vaultPaths ?? []).map(p => p.trim()).filter(Boolean);
     if (vaults.length > 0) {
       parts.push('--add-dir', ...vaults.map(shellQuote));

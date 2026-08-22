@@ -313,22 +313,46 @@ fn live_session_ids() -> Vec<String> {
         .args(["-axo", "args="])
         .output();
     let Ok(output) = output else { return Vec::new() };
-    let text = String::from_utf8_lossy(&output.stdout);
+    session_ids_from_command_lines(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Windows: command lines via CIM (no `ps`). Only claude/node processes are
+/// queried; PowerShell is run hidden so no console window flashes.
+#[cfg(windows)]
+fn live_session_ids() -> Vec<String> {
+    let output = crate::cli_engine::quiet_command("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='claude.exe' OR Name='node.exe'\" | ForEach-Object { $_.CommandLine }",
+        ])
+        .output();
+    let Ok(output) = output else { return Vec::new() };
+    session_ids_from_command_lines(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Parses `--session-id <uuid>` / `--resume <uuid>` out of one command line
+/// per row (the `ps`/CIM output shape).
+fn session_ids_from_command_lines(text: &str) -> Vec<String> {
     let mut ids = Vec::new();
     for line in text.lines() {
-        let mut parts = line.split_whitespace();
-        let Some(bin) = parts.next() else { continue };
+        let tokens = command_line_tokens(line);
+        let Some(bin) = tokens.first() else { continue };
         // Native install: `claude …`; npm install: `node …/bin/claude …`.
         let mut is_claude = basename(bin) == "claude";
         if !is_claude && basename(bin).starts_with("node") {
-            let mut peek = parts.clone();
-            is_claude = peek.next().map(|p| basename(p) == "claude").unwrap_or(false);
+            // `node …/bin/claude` (POSIX npm) or `node …\claude-code\cli.js` (Windows npm shim).
+            is_claude = tokens.get(1).map(|p| {
+                let p = p.replace('\\', "/");
+                basename(&p) == "claude" || p.ends_with("/claude-code/cli.js")
+            }).unwrap_or(false);
         }
         if !is_claude {
             continue;
         }
         let mut prev = "";
-        for part in parts {
+        for part in tokens.iter().skip(1) {
             if (prev == "--session-id" || prev == "--resume" || prev == "-r") && looks_like_uuid(part) {
                 ids.push(part.to_string());
             }
@@ -338,13 +362,36 @@ fn live_session_ids() -> Vec<String> {
     ids
 }
 
-#[cfg(not(unix))]
+/// Whitespace tokenizer that keeps double-quoted runs together — Windows
+/// command lines quote paths with spaces (`"C:\Program Files\…\claude.exe"`).
+fn command_line_tokens(line: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut cur = String::new();
+    let mut quoted = false;
+    let mut has_token = false;
+    for c in line.chars() {
+        match c {
+            '"' => { quoted = !quoted; has_token = true; }
+            c if c.is_whitespace() && !quoted => {
+                if has_token { tokens.push(std::mem::take(&mut cur)); has_token = false; }
+            }
+            c => { cur.push(c); has_token = true; }
+        }
+    }
+    if has_token { tokens.push(cur); }
+    tokens
+}
+
+#[cfg(not(any(unix, windows)))]
 fn live_session_ids() -> Vec<String> {
     Vec::new()
 }
 
+/// Last path component, tolerant of both separators and Windows `.exe`
+/// (`C:\\…\\claude.exe` → `claude`).
 fn basename(path: &str) -> &str {
-    path.rsplit('/').next().unwrap_or(path)
+    let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
+    name.strip_suffix(".exe").or_else(|| name.strip_suffix(".EXE")).unwrap_or(name)
 }
 
 fn looks_like_uuid(s: &str) -> bool {
@@ -424,6 +471,26 @@ pub async fn claude_session_state(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn live_ids_parse_posix_and_windows_command_lines() {
+        let text = concat!(
+            "claude --session-id 11111111-1111-1111-1111-111111111111 --append-system-prompt-file /tmp/b.md\n",
+            "node /Users/x/.npm/bin/claude --resume 22222222-2222-2222-2222-222222222222\n",
+            "\"C:\\Program Files\\claude\\claude.exe\" --session-id 33333333-3333-3333-3333-333333333333\n",
+            "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js\" -r 44444444-4444-4444-4444-444444444444\n",
+            "vim --session-id 55555555-5555-5555-5555-555555555555\n",
+        );
+        let ids = session_ids_from_command_lines(text);
+        assert_eq!(ids, vec![
+            "11111111-1111-1111-1111-111111111111",
+            "22222222-2222-2222-2222-222222222222",
+            "33333333-3333-3333-3333-333333333333",
+            "44444444-4444-4444-4444-444444444444",
+        ]);
+        assert_eq!(basename("C:\\x\\claude.exe"), "claude");
+        assert_eq!(basename("/usr/local/bin/claude"), "claude");
+    }
+
     use super::*;
 
     #[test]
