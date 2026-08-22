@@ -12,7 +12,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare, History } from 'lucide-react';
+import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare, History, FolderOpen, AlertTriangle } from 'lucide-react';
 import { Mosaic, MosaicWindow, createRemoveUpdate, updateTree } from 'react-mosaic-component';
 import type { MosaicNode, MosaicPath, MosaicDirection } from 'react-mosaic-component';
 import { useTerminalStore, engineCommand } from '../../store/terminalStore';
@@ -21,6 +21,8 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useProjectStore } from '../../store/projectStore';
 import { getOrCreateTerminal, attachTerminal, disposeTerminal } from './terminalRegistry';
 import { SessionsMenu } from './SessionsMenu';
+import { setProjectRootPath } from '../../services/projectController';
+import { pickDirectory } from '../../services/platform';
 import { paneTitleFor, type ClaudeSessionInfo } from '../../services/claudeSessions';
 
 import '@xterm/xterm/css/xterm.css';
@@ -114,7 +116,15 @@ export function MultiTerminalPanel() {
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const closeSessions = useCallback(() => setSessionsOpen(false), []);
   // Subscribed (not read once) so a later-picked Space folder re-targets the menu.
+  const activeProjectId = useProjectStore(s => s.activeProjectId);
   const cwd = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId)?.rootPath?.trim() || null);
+
+  /** Picks (or changes) the Space folder; open panes restart there. */
+  const chooseRoot = async () => {
+    if (!activeProjectId) return;
+    const picked = await pickDirectory(cwd ?? undefined);
+    if (picked) setProjectRootPath(activeProjectId, picked);
+  };
   const openPanes = useMemo(() => {
     const map: Record<string, string> = {};
     Object.values(sessions).forEach(s => { if (s.claudeSessionId) map[s.claudeSessionId] = s.id; });
@@ -230,6 +240,18 @@ export function MultiTerminalPanel() {
         >
           <History size={12} /> OTURUMLAR
         </button>
+        {activeProjectId && (
+          <button
+            className={`term-strip-btn term-strip-cwd${cwd ? '' : ' is-missing'}`}
+            title={cwd
+              ? `Çalışma klasörü: ${cwd} — değiştirmek için tıkla (paneller yeniden başlar)`
+              : 'Bu Space için çalışma klasörü seçilmedi — terminaller ev dizininde açılıyor. Seçmek için tıkla.'}
+            onClick={() => { void chooseRoot(); }}
+          >
+            {cwd ? <FolderOpen size={12} /> : <AlertTriangle size={12} />}
+            <span className="term-strip-cwd-text">{cwd ? cwd.split('/').filter(Boolean).pop() : 'KLASÖR SEÇ'}</span>
+          </button>
+        )}
         <span className="term-strip-spacer" />
         <button className="term-action" title="Yeni terminal" onClick={addTerminal}>
           <Plus size={14} />
