@@ -1,0 +1,22 @@
+<svg viewBox="0 0 460 112" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">AgentSpace logo lockup</title>
+  <desc id="desc">AgentSpace icon and wordmark for product branding.</desc>
+  <g transform="translate(8 6)" color="#f8f8fb">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="17" y="17" width="66" height="66" rx="18" stroke-width="4"/>
+      <path d="M 50 11 A 39 39 0 0 1 89 50" stroke-width="4"/>
+      <path d="M 50 89 A 39 39 0 0 1 11 50" stroke-width="4"/>
+      <path d="M 31 60 Q 50 76 69 60" stroke-width="3" opacity=".72"/>
+      <path d="M 31 40 Q 50 24 69 40" stroke-width="3" opacity=".72"/>
+      <circle cx="50" cy="50" r="9.5" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="11" r="5" fill="currentColor" stroke="none"/>
+      <circle cx="89" cy="50" r="5" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="89" r="5" fill="currentColor" stroke="none"/>
+      <circle cx="11" cy="50" r="5" fill="currentColor" stroke="none"/>
+    </g>
+  </g>
+  <g fill="#f8f8fb">
+    <text x="128" y="56" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="34" font-weight="650" letter-spacing="0">AgentSpace</text>
+    <text x="130" y="78" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="500" letter-spacing="2.8" opacity=".58">AGENT ORCHESTRATION WORKSPACE</text>
+  </g>
+</svg>

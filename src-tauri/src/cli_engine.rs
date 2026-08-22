@@ -48,21 +48,45 @@ pub fn detect_engines() -> Vec<CliEngineInfo> {
         .collect()
 }
 
-/// Find binary path using `which`
+/// Helper-process command that never flashes a console window on Windows.
+pub fn quiet_command(program: &str) -> Command {
+    let cmd = Command::new(program);
+    #[cfg(windows)]
+    let cmd = {
+        use std::os::windows::process::CommandExt;
+        let mut c = cmd;
+        c.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        c
+    };
+    cmd
+}
+
+/// Find binary path using `which` (POSIX) / `where` (Windows). `where` may
+/// list several matches (claude.exe, claude.cmd …) — the first wins.
 fn which_binary(name: &str) -> Option<String> {
-    let output = Command::new("which").arg(name).output().ok()?;
+    #[cfg(windows)]
+    let mut cmd = quiet_command("where");
+    #[cfg(not(windows))]
+    let mut cmd = quiet_command("which");
+    let output = cmd.arg(name).output().ok()?;
     if output.status.success() {
-        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !path.is_empty() {
-            return Some(path);
-        }
+        let text = String::from_utf8_lossy(&output.stdout);
+        let path = text.lines().map(str::trim).find(|l| !l.is_empty())?.to_string();
+        return Some(path);
     }
     None
 }
 
-/// Get CLI version string
+/// Get CLI version string. On Windows npm-installed CLIs are `.cmd` shims
+/// that CreateProcess cannot start directly, so go through `cmd /C`.
 fn get_version(binary: &str) -> Option<String> {
-    let output = Command::new(binary)
+    #[cfg(windows)]
+    let output = quiet_command("cmd")
+        .args(["/C", binary, "--version"])
+        .output()
+        .ok()?;
+    #[cfg(not(windows))]
+    let output = quiet_command(binary)
         .arg("--version")
         .output()
         .ok()?;

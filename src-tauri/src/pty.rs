@@ -22,8 +22,29 @@ pub struct PtySession {
 #[derive(Default)]
 pub struct PtyManager(pub Mutex<HashMap<String, PtySession>>);
 
-fn default_shell() -> String {
-    std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+/// Shell program + args for a new pane.
+/// POSIX: `$SHELL -l` (login shell so PATH/rc files load as in Terminal.app).
+/// Windows: `AGENTSPACE_SHELL` if set, else PowerShell 7 (`pwsh`) when on
+/// PATH, else Windows PowerShell — the launch line typed by the frontend
+/// uses `$env:` syntax, so cmd.exe is not a default.
+#[cfg(not(windows))]
+fn default_shell() -> (String, Vec<String>) {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    (shell, vec!["-l".to_string()])
+}
+
+#[cfg(windows)]
+fn default_shell() -> (String, Vec<String>) {
+    if let Ok(custom) = std::env::var("AGENTSPACE_SHELL") {
+        if !custom.trim().is_empty() {
+            return (custom, Vec::new());
+        }
+    }
+    let has_pwsh = std::env::var_os("PATH")
+        .map(|p| std::env::split_paths(&p).any(|d| d.join("pwsh.exe").is_file()))
+        .unwrap_or(false);
+    let shell = if has_pwsh { "pwsh.exe" } else { "powershell.exe" };
+    (shell.to_string(), vec!["-NoLogo".to_string()])
 }
 
 /// Session ids come from the frontend; keep the brief file name boring.
@@ -63,8 +84,11 @@ pub fn pty_spawn(
         .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
         .map_err(|e| e.to_string())?;
 
-    let mut cmd = CommandBuilder::new(default_shell());
-    cmd.arg("-l");
+    let (shell, shell_args) = default_shell();
+    let mut cmd = CommandBuilder::new(shell);
+    for arg in shell_args {
+        cmd.arg(arg);
+    }
     // Space / agent context for whatever runs inside the shell.
     for (key, value) in env.unwrap_or_default() {
         cmd.env(key, value);

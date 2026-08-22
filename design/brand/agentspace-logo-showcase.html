@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentSpace Logo Showcase</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11131a;
+      --surface: #1e1e28;
+      --surface-2: #262633;
+      --text: #f8f8fb;
+      --muted: #a0a3b5;
+      --border: #323241;
+      --accent: #1de9b6;
+      --violet: #8b5cf6;
+      --warning: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 75% 8%, rgba(29, 233, 182, .16), transparent 28rem),
+        radial-gradient(circle at 18% 14%, rgba(139, 92, 246, .18), transparent 24rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0 64px;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: end;
+      padding-bottom: 34px;
+      border-bottom: 1px solid rgba(248, 248, 251, .14);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 84px);
+      line-height: .92;
+      font-weight: 720;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 2.4px;
+    }
+
+    .intro {
+      max-width: 680px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .mark-preview {
+      width: clamp(112px, 18vw, 180px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(248, 248, 251, .16);
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(248, 248, 251, .08), rgba(248, 248, 251, .02));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .26);
+    }
+
+    .mark-preview img { width: 68%; color: var(--text); }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: baseline;
+      margin: 48px 0 20px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 680;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font: 500 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.8px;
+    }
+
+    .hero-lockup {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 28px;
+      align-items: center;
+      padding: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(30, 30, 40, .72);
+    }
+
+    .lockup-stage {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(248, 248, 251, .08);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(248, 248, 251, .06), transparent),
+        #171820;
+    }
+
+    .lockup-stage img { width: min(82%, 470px); }
+
+    .note {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .downloads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .download {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid rgba(248, 248, 251, .16);
+      border-radius: 6px;
+      background: rgba(248, 248, 251, .05);
+      color: var(--text);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .concept {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(30, 30, 40, .74);
+      overflow: hidden;
+    }
+
+    .concept-visual {
+      height: 210px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(145deg, rgba(248, 248, 251, .08), transparent),
+        #171820;
+    }
+
+    .concept-visual img {
+      width: 112px;
+      height: 112px;
+    }
+
+    .concept-copy { padding: 18px; }
+
+    .concept h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 680;
+    }
+
+    .concept p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: #061411;
+      background: var(--accent);
+      font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .swatch {
+      min-height: 86px;
+      display: flex;
+      align-items: flex-end;
+      padding: 10px;
+      border-radius: 8px;
+      color: white;
+      font: 700 11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+    }
+
+    .asset-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .asset {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(30, 30, 40, .72);
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .asset strong { color: var(--text); font-weight: 650; }
+
+    @media (max-width: 860px) {
+      .header,
+      .hero-lockup {
+        grid-template-columns: 1fr;
+      }
+
+      .grid,
+      .asset-list {
+        grid-template-columns: 1fr;
+      }
+
+      .palette {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .mark-preview {
+        width: 132px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <p class="kicker">AgentSpace identity exploration</p>
+        <h1>AgentSpace</h1>
+        <p class="intro">Tauri tabanli masaustu ajan orkestrasyon urunu icin logo sistemi: Space, blueprint, terminal, RAG memory ve coklu ajan koordinasyonu tek bir sade marka isaretinde toplandi.</p>
+      </div>
+      <div class="mark-preview">
+        <img src="./agentspace-mark.svg" alt="AgentSpace mark">
+      </div>
+    </header>
+
+    <section>
+      <div class="section-title">
+        <h2>Onerilen Final</h2>
+        <span>Command Orbit</span>
+      </div>
+      <div class="hero-lockup">
+        <div class="lockup-stage">
+          <img src="./agentspace-lockup.svg" alt="AgentSpace lockup">
+        </div>
+        <div>
+          <p class="note">Final yon, AgentSpace'in ana fikrine en yakin olani: ortadaki cekirdek aktif proje alanini, dis koseler ajanlari, yuvarlatilmis kare de uygulamadaki Space/oda metaforunu temsil ediyor. Tek renkli calisir, favicon boyutunda okunur, dark UI ile uyumludur.</p>
+          <div class="downloads">
+            <a class="download" href="./agentspace-mark.svg" download>Mark SVG</a>
+            <a class="download" href="./agentspace-lockup.svg" download>Lockup SVG</a>
+            <a class="download" href="./agentspace-app-icon.svg" download>App Icon SVG</a>
+            <a class="download" href="./agentspace-mark.png" download>Mark PNG</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>6 Logo Yonu</h2>
+        <span>SVG concepts</span>
+      </div>
+      <div class="grid">
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-01-command-orbit.svg" alt="Command Orbit"></div>
+          <div class="concept-copy">
+            <span class="badge">Recommended</span>
+            <h3>Command Orbit</h3>
+            <p>Space icindeki ajan koordinasyonunu merkez ve dort bagli nokta ile anlatir. En dengeli, en urun-ikonuna uygun yon.</p>
+          </div>
+        </article>
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-02-blueprint-core.svg" alt="Blueprint Core"></div>
+          <div class="concept-copy">
+            <h3>Blueprint Core</h3>
+            <p>Blueprint motoru ve sistem mimarisini altigen katmanlarla gosterir. Daha teknik ve altyapi hissi verir.</p>
+          </div>
+        </article>
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-03-memory-graph.svg" alt="Memory Graph"></div>
+          <div class="concept-copy">
+            <h3>Memory Graph</h3>
+            <p>RAG, Graphiti ve proje hafizasini asimetrik dugum agi uzerinden isaretler. Daha organik ve akilli.</p>
+          </div>
+        </article>
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-04-terminal-grid.svg" alt="Terminal Grid"></div>
+          <div class="concept-copy">
+            <h3>Terminal Grid</h3>
+            <p>Multi-terminal calisma duzenini pencere ve prompt formlariyla soyutlar. Developer-tool kimligi daha baskindir.</p>
+          </div>
+        </article>
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-05-rag-constellation.svg" alt="RAG Constellation"></div>
+          <div class="concept-copy">
+            <h3>RAG Constellation</h3>
+            <p>Bilgi getirimi, hafiza haritasi ve ajanlar arasindaki baglami dairesel bir sistem icinde toplar.</p>
+          </div>
+        </article>
+        <article class="concept">
+          <div class="concept-visual"><img src="./variant-06-office-mosaic.svg" alt="Office Mosaic"></div>
+          <div class="concept-copy">
+            <h3>Office Mosaic</h3>
+            <p>2D ofis, paneller ve ekip odalari fikrini dort bolmeli bir calisma alani olarak sadeleştirir.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Renk Sistemi</h2>
+        <span>Project-native palette</span>
+      </div>
+      <div class="palette">
+        <div class="swatch" style="background:#11131a">#11131A<br>Base</div>
+        <div class="swatch" style="background:#1e1e28">#1E1E28<br>Surface</div>
+        <div class="swatch" style="background:#8b5cf6">#8B5CF6<br>Accent</div>
+        <div class="swatch" style="background:#1de9b6; color:#051412">#1DE9B6<br>Signal</div>
+        <div class="swatch" style="background:#f59e0b; color:#170d02">#F59E0B<br>Workflow</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Dosyalar</h2>
+        <span>Exports</span>
+      </div>
+      <div class="asset-list">
+        <a class="asset" href="./agentspace-mark.svg" download><strong>agentspace-mark.svg</strong><span>Vector</span></a>
+        <a class="asset" href="./agentspace-lockup.svg" download><strong>agentspace-lockup.svg</strong><span>Vector</span></a>
+        <a class="asset" href="./agentspace-app-icon.svg" download><strong>agentspace-app-icon.svg</strong><span>Vector</span></a>
+        <a class="asset" href="./agentspace-mark.png" download><strong>agentspace-mark.png</strong><span>1024</span></a>
+        <a class="asset" href="./agentspace-lockup.png" download><strong>agentspace-lockup.png</strong><span>2048</span></a>
+        <a class="asset" href="./agentspace-app-icon.png" download><strong>agentspace-app-icon.png</strong><span>1024</span></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
