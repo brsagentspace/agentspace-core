@@ -1,10 +1,11 @@
 # AgentSpace Blueprint — TikTok Canlı Yayın Video Edit (Remotion)
 # Miras: _base-media.yaml (medya evrensel kuralları geçerli; yazılım kuralları DEĞİL)
-# Kaynak bilgi tabanı: ~/tiktok-edit/docs — KURALLARIN TEK KAYNAĞI docs/05-kurallar-ve-dersler.md'dir;
-# bu dosya özet/işaretçidir, çelişkide docs kazanır. (v1.1.0 — 2026-08-21 SEZER işi sonrası güncellendi)
+# Kaynak bilgi tabanı: ~/tiktok-edit/docs — TİPLERİN TEK KAYNAĞI docs/00-tipler.md (5 tip), KURALLARIN TEK KAYNAĞI
+# docs/05-kurallar-ve-dersler.md'dir; bu dosya özet/işaretçidir, çelişkide docs kazanır.
+# (v1.1.0 — 2026-08-21 SEZER işi sonrası; v1.2.0 — 2026-08-22 audit: 5 tip, Muhafız ayrıldı, recap → yayin_ozeti)
 
 id: "video-edit-tiktok"
-version: "1.1.0"
+version: "1.2.0"
 name: "TikTok Canlı Yayın Video Edit"
 project_type: "media"
 domain: "media"
@@ -12,10 +13,12 @@ inherits: "_base-media"
 
 description: |
   TikTok canlı yayın kayıtlarından (hediye / seviye atlama / yayın özeti) müşteri için
-  kısa video üreten Remotion + ffmpeg pipeline'ı. Dört onaylı iş tipi vardır: BENİ SEV (40+ seviye,
-  muhafız teması; başta seviye ekranı ŞART ama her videoda farklı intro tarzı), NORMAL LEVEL ATLAMA (sade AI
-  + bant, elmas yok), ÖZEL LEVEL ATLAMA (detaylı AI + elmas patlatma) ve YAYIN ÖZETİ / RECAP (efektsiz,
-  sessiz arşiv). GENEL İLKE (müşteri teyidi): hediye/canlı ekranlarında MİNİMUM animasyon — efekt bütçesi
+  kısa video üreten Remotion + ffmpeg pipeline'ı. BEŞ onaylı iş tipi vardır (tek kaynak: docs/00-tipler.md):
+  BENİ SEV (40+ seviyenin varsayılanı; başta seviye ekranı ŞART ama her videoda farklı intro tarzı),
+  MUHAFIZ (Beni Sev'in başında seviye ekranı/sayaç YOK, doğrudan AI başlar; gerisi aynı), BASİT LEVEL (= Normal;
+  tek sade AI + bant, elmas yok), ÖZEL LEVEL (çoklu AI sahne + elmas patlatma) ve YAYIN ÖZETİ (efektsiz,
+  sessiz arşiv). Tip iş kartında belirtilir; Muhafız vs Beni Sev = sayaç introsu var mı, Özel vs Basit =
+  elmas patlatma var mı. GENEL İLKE (müşteri teyidi): hediye/canlı ekranlarında MİNİMUM animasyon — efekt bütçesi
   AI sahnelere. İş tipi ve müzik linki netleşmeden kurgu başlamaz.
 
 tags: ["video", "remotion", "ffmpeg", "tiktok", "capcut", "edit", "recap"]
@@ -30,11 +33,12 @@ architecture:
     2) Segment tablosu (t0, t1, tip, hız) plan JSON'una yazılır — render bu plandan üretilir.
     3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
     4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
-  work_types:
-    beni_sev: "40+ SEVİYE atlamaları, 'muhafız' teması. ZORUNLU: başta seviye ekranı + 1→N sayaç bandı (gerçek bandın replikası) — ama her videoda FARKLI intro tarzı (docs/00 'intro TARZ KAYDI': Nur/Tony = alevli telefon vitrini, SEZER = sinematik altın kart; sıradaki yeni tarz). Sonra AI muhafız sahnesi → müziğin en sert vuruşunda patlama → hediyeler gerçek TikTok sesleriyle (assets/hediye-sesleri) → karanlık bitiş. Müzik müşteriden (TikTok sesi linki). Örnekler: tony_final, NurMix, sezer3_final (SezerMix3)"
-    level_normal: "Sıradan seviye: TikTokçuya özel, kişiyi lüks gösteren sade AI video + bant; ELMAS PATLATMA YOK; hediye bölümü minimum animasyon (GizemMix, DuyguMix)"
-    level_ozel: "Özel/önemli seviye: detaylı AI video + elmas patlatma; 5 perde, AI perdelerinde büyük whip/liquid + mega patlama, 3 müzik kilidi (SarayMix) — hediye şelalesi perdesi artık MİNİMUM animasyon (docs/08 uyarısı)"
-    recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap)"
+  work_types:  # anahtarlar = panel JobType (tiktok-yukle job-types.ts) = docs/00-tipler.md §3 eşleme tablosu
+    beni_sev: "40+ SEVİYE atlamalarının VARSAYILAN tipi ('muhafız' denmediyse), koruyucu teması. ZORUNLU: başta seviye ekranı + 1→N sayaç bandı (gerçek bandın replikası) — ama her videoda FARKLI intro tarzı (docs/00 'intro TARZ KAYDI': Nur/Tony = alevli telefon vitrini, SEZER = sinematik altın kart; sıradaki yeni tarz). Sonra AI muhafız sahnesi → müziğin en sert vuruşunda patlama → hediyeler gerçek TikTok sesleriyle (assets/hediye-sesleri) → karanlık bitiş. Müzik müşteriden (TikTok sesi linki). Örnekler: tony_final, NurMix, sezer3_final (SezerMix3)"
+    muhafiz: "Beni Sev'in İNTROSUZ hali (docs/00-tipler §1.2): başta seviye ekranı / sayaç bandı / alevli telefon YOK, doğrudan AI muhafız sahnesi başlar → müzik nefesinde slow-mo → drop'ta mega patlama → temiz hediye bölümü (gerçek hediye sesleri, beat gridinde kesme) → karanlık bitiş. Hediye bölümünde titreme yok; dar (864px) kayıtta siyah bant yerine blur dolgu. Level videosu opsiyonel; /vitrin çağrılmaz. Örnek: muhafiz_final (MuhafizMix v5), sezer_final (SezerMix v2)"
+    level_normal: "BASİT LEVEL (= Normal). Sıradan seviye: TikTokçuya özel, kişiyi lüks gösteren sade AI video + bant; ELMAS PATLATMA YOK; hediye bölümü minimum animasyon (GizemMix, DuyguMix)"
+    level_ozel: "ÖZEL LEVEL. Önemli seviye: detaylı AI video + elmas patlatma; 5 perde, AI perdelerinde büyük whip/liquid + mega patlama, 3 müzik kilidi (SarayMix) — hediye şelalesi perdesi artık MİNİMUM animasyon (docs/08 uyarısı)"
+    yayin_ozeti: "YAYIN ÖZETİ (eski adı recap): sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap); 5 altın kural docs/09 §0"
 
 # ─────────────────────────────────────────────
 # ONAYLANMIŞ KURALLAR (müşteri geri bildirimiyle kesinleşti)
@@ -125,7 +129,7 @@ agent_roles:
     responsibilities:
       - "Kaynak analizi: proxy + mono ses çıkar, sinyal tespiti (detect.py / gift_scan)"
       - "Kontakt föyü üret, adayları GÖZLE sınıflandır, segment tablosunu yaz"
-      - "İş tipini (vitrin / level / recap) ve level sınıfını (NORMAL / BÜYÜK) netleştir"
+      - "İş tipini iş kartından al (5 tip: beni_sev / muhafiz / level_normal / level_ozel / yayin_ozeti — docs/00-tipler.md); belirtilmemişse §0 karar tablosuyla SOR"
   editor:
     count: 1
     model_tier: 1
@@ -159,7 +163,7 @@ initial_feed:
   - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ÖNCE docs/05-kurallar-ve-dersler.md (müşteri kuralları #10-16 + genel ilke) ve ilgili tipin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti, 10-hediye-sesleri) oku. ~/tiktok-edit/CLAUDE.md haritadır."
   - "İlk 5 soru: (1) kaçıncı seviye/özel mi, (2) müzik linki, (3) hangi hediyeler, (4) intro tarzı (Beni Sev'de daha önce kullanılmamış), (5) yasaklar. Müzik netleşmeden render yok."
   - "Oturum sonunda /ders-kaydet: yeni kural/ders/ses dosyasını docs'a işle ve commit et — hafıza haritası docs'tan beslenir, ajan yazmazsa öğrenilen kaybolur."
-  - "Önce SOR: kaçıncı seviye, özel mi? 40+ → BENİ SEV (muhafız teması); değilse NORMAL LEVEL (lüks sade, elmas yok) ya da ÖZEL LEVEL (detaylı AI + elmas patlatma); arşiv → RECAP. Her tipin efekt dili farklıdır, karıştırma."
+  - "Tip docs/00-tipler.md'den: iş kartında yazıyorsa onu uygula. Yazmıyorsa SOR: arşiv → YAYIN ÖZETİ; 40+ → BENİ SEV (varsayılan; 'muhafız' dendiyse MUHAFIZ = introsuz Beni Sev); <40 → elmas patlatma + çoklu AI sahne varsa ÖZEL LEVEL, yoksa BASİT LEVEL. Her tipin efekt dili farklıdır, karıştırma."
   - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
   - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
   - "Kayıt sesi asla kullanılmaz; hediye sesleri assets/hediye-sesleri kütüphanesinden (gerçek TikTok sesleri), müzik müşteriden. Jenerik stok SFX yok; whoosh/shimmer/çember/ışın yok."
