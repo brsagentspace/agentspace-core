@@ -11,8 +11,9 @@
 import type { CSSProperties } from 'react';
 import {
   Play, Activity, FolderGit2, Settings, Terminal, UserPlus,
-  BookOpenCheck, Home, Building2, BrainCircuit, Blocks,
+  BookOpenCheck, Home, Building2, BrainCircuit,
 } from 'lucide-react';
+import { BrandLockup } from '../brand/BrandMark';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useProjectStore } from '../../store/projectStore';
@@ -61,12 +62,9 @@ export function TopBar({ onOpenTelemetry, onOpenSettings, onOpenAddAgent, onTogg
 
       {/* Left cluster: brand + tabs + project */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Blocks size={22} style={{ color: '#a78bfa' }} />
-          <h1 style={{ fontSize: 17, fontWeight: 800, color: '#f8f8fb', margin: 0, letterSpacing: 0.3 }}>
-            AgentSpace
-          </h1>
-        </div>
+        <h1 style={{ margin: 0 }}>
+          <BrandLockup markSize={24} fontSize={17} />
+        </h1>
 
         {inProject && (
           <>

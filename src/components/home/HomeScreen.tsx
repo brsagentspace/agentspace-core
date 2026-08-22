@@ -18,6 +18,7 @@ import { blueprintsForDomain } from '../../lib/blueprintCatalog';
 import { pickDirectory } from '../../services/platform';
 import type { SpaceDomain } from '../../types';
 import './HomeScreen.css';
+import { BrandMark } from '../brand/BrandMark';
 
 const DOMAINS: SpaceDomain[] = ['software', 'media'];
 
@@ -72,6 +73,7 @@ export function HomeScreen() {
     <div className="home-screen">
       <div className="home-title-row">
         <span className="home-title-line" />
+        <BrandMark size={34} style={{ color: '#f8f8fb' }} />
         <h1 className="home-title">{t('home.title')}</h1>
         <span className="home-title-line" />
       </div>

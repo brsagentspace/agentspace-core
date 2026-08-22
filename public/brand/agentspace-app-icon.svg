@@ -1,0 +1,32 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">AgentSpace app icon</title>
+  <desc id="desc">Dark app icon using the AgentSpace command orbit mark.</desc>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="54" x2="438" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e1e28"/>
+      <stop offset=".56" stop-color="#11131a"/>
+      <stop offset="1" stop-color="#0a1014"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(356 154) rotate(132) scale(310)">
+      <stop stop-color="#1de9b6" stop-opacity=".34"/>
+      <stop offset=".48" stop-color="#8b5cf6" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#halo)"/>
+  <g transform="translate(96 96) scale(3.2)" color="#f8f8fb">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="23" y="23" width="54" height="54" rx="15" stroke-width="3.4"/>
+      <path d="M 50 18 A 32 32 0 0 1 82 50" stroke-width="3.4"/>
+      <path d="M 50 82 A 32 32 0 0 1 18 50" stroke-width="3.4"/>
+      <path d="M 34 58 Q 50 72 66 58" stroke-width="2.6" opacity=".72"/>
+      <path d="M 34 42 Q 50 28 66 42" stroke-width="2.6" opacity=".72"/>
+      <circle cx="50" cy="50" r="8" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="18" r="4.2" fill="currentColor" stroke="none"/>
+      <circle cx="82" cy="50" r="4.2" fill="currentColor" stroke="none"/>
+      <circle cx="50" cy="82" r="4.2" fill="currentColor" stroke="none"/>
+      <circle cx="18" cy="50" r="4.2" fill="currentColor" stroke="none"/>
+    </g>
+  </g>
+</svg>
