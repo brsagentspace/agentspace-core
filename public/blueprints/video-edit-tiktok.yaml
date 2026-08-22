@@ -1,9 +1,11 @@
 # AgentSpace Blueprint — TikTok Canlı Yayın Video Edit (Remotion)
 # Miras: _base-media.yaml (medya evrensel kuralları geçerli; yazılım kuralları DEĞİL)
-# Kaynak bilgi tabanı: ~/tiktok-edit/docs (05-kurallar-ve-dersler, 08-level-atlama, 09-yayin-ozeti)
+# Kaynak bilgi tabanı: ~/tiktok-edit/docs — TİPLERİN TEK KAYNAĞI docs/00-tipler.md (5 tip), KURALLARIN TEK KAYNAĞI
+# docs/05-kurallar-ve-dersler.md'dir; bu dosya özet/işaretçidir, çelişkide docs kazanır.
+# (v1.1.0 — 2026-08-21 SEZER işi sonrası; v1.2.0 — 2026-08-22 audit: 5 tip, Muhafız ayrıldı, recap → yayin_ozeti)
 
 id: "video-edit-tiktok"
-version: "1.0.0"
+version: "1.2.0"
 name: "TikTok Canlı Yayın Video Edit"
 project_type: "media"
 domain: "media"
@@ -11,11 +13,13 @@ inherits: "_base-media"
 
 description: |
   TikTok canlı yayın kayıtlarından (hediye / seviye atlama / yayın özeti) müşteri için
-  kısa video üreten Remotion + ffmpeg pipeline'ı. Dört onaylı iş tipi vardır ve efekt
-  dilleri birbirinden farklıdır: BENİ SEV (onaylı vitrin formülü, opsiyonel müzikli devam), NORMAL LEVEL
-  ATLAMA (tek AI sahne + bant zoom), ÖZEL LEVEL ATLAMA (güçlü AI sahneler + büyük geçişler
-  + mega patlama) ve YAYIN ÖZETİ / RECAP (efektsiz, sessiz arşiv). Müzikli devamda vitrin
-  girişi dokunulmaz kalır. İş tipi netleşmeden kurgu başlamaz.
+  kısa video üreten Remotion + ffmpeg pipeline'ı. BEŞ onaylı iş tipi vardır (tek kaynak: docs/00-tipler.md):
+  BENİ SEV (40+ seviyenin varsayılanı; başta seviye ekranı ŞART ama her videoda farklı intro tarzı),
+  MUHAFIZ (Beni Sev'in başında seviye ekranı/sayaç YOK, doğrudan AI başlar; gerisi aynı), BASİT LEVEL (= Normal;
+  tek sade AI + bant, elmas yok), ÖZEL LEVEL (çoklu AI sahne + elmas patlatma) ve YAYIN ÖZETİ (efektsiz,
+  sessiz arşiv). Tip iş kartında belirtilir; Muhafız vs Beni Sev = sayaç introsu var mı, Özel vs Basit =
+  elmas patlatma var mı. GENEL İLKE (müşteri teyidi): hediye/canlı ekranlarında MİNİMUM animasyon — efekt bütçesi
+  AI sahnelere. İş tipi ve müzik linki netleşmeden kurgu başlamaz.
 
 tags: ["video", "remotion", "ffmpeg", "tiktok", "capcut", "edit", "recap"]
 
@@ -29,11 +33,12 @@ architecture:
     2) Segment tablosu (t0, t1, tip, hız) plan JSON'una yazılır — render bu plandan üretilir.
     3) Vitrin/Saray: Remotion kompozisyonu; Recap: sessizse yalnız ffmpeg.
     4) panel_scan + frame extract + volumedetect ile QA; sonra teslim.
-  work_types:
-    beni_sev: "40+ SEVİYE atlamaları: level atlayan kişi TikTokçunun 'muhafızı' teması; açılışta alev çerçeveli yatık telefon (bezel + filaman alev + 3D yatış + sayaç bandı) + karanlık bitiş, yalnız orijinal ses (tony_final.mp4 = TonyVitrin); istenirse müzikli devam (ty_mix, NurMix)"
-    level_normal: "Sıradan seviye: TikTokçuya özel, kişiyi lüks gösteren sade AI video + bant zoom; ELMAS PATLATMA YOK (GizemMix, DuyguMix)"
-    level_ozel: "Özel/önemli seviye: detaylı AI video + elmas patlatma; 5 perde, büyük whip/liquid, mega patlama, 3 müzik kilidi (SarayMix)"
-    recap: "Yayın özeti: sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap)"
+  work_types:  # anahtarlar = panel JobType (tiktok-yukle job-types.ts) = docs/00-tipler.md §3 eşleme tablosu
+    beni_sev: "40+ SEVİYE atlamalarının VARSAYILAN tipi ('muhafız' denmediyse), koruyucu teması. ZORUNLU: başta seviye ekranı + 1→N sayaç bandı (gerçek bandın replikası) — ama her videoda FARKLI intro tarzı (docs/00 'intro TARZ KAYDI': Nur/Tony = alevli telefon vitrini, SEZER = sinematik altın kart; sıradaki yeni tarz). Sonra AI muhafız sahnesi → müziğin en sert vuruşunda patlama → hediyeler gerçek TikTok sesleriyle (assets/hediye-sesleri) → karanlık bitiş. Müzik müşteriden (TikTok sesi linki). Örnekler: tony_final, NurMix, sezer3_final (SezerMix3)"
+    muhafiz: "Beni Sev'in İNTROSUZ hali (docs/00-tipler §1.2): başta seviye ekranı / sayaç bandı / alevli telefon YOK, doğrudan AI muhafız sahnesi başlar → müzik nefesinde slow-mo → drop'ta mega patlama → temiz hediye bölümü (gerçek hediye sesleri, beat gridinde kesme) → karanlık bitiş. Hediye bölümünde titreme yok; dar (864px) kayıtta siyah bant yerine blur dolgu. Level videosu opsiyonel; /vitrin çağrılmaz. Örnek: muhafiz_final (MuhafizMix v5), sezer_final (SezerMix v2)"
+    level_normal: "BASİT LEVEL (= Normal). Sıradan seviye: TikTokçuya özel, kişiyi lüks gösteren sade AI video + bant; ELMAS PATLATMA YOK; hediye bölümü minimum animasyon (GizemMix, DuyguMix)"
+    level_ozel: "ÖZEL LEVEL. Önemli seviye: detaylı AI video + elmas patlatma; 5 perde, AI perdelerinde büyük whip/liquid + mega patlama, 3 müzik kilidi (SarayMix) — hediye şelalesi perdesi artık MİNİMUM animasyon (docs/08 uyarısı)"
+    yayin_ozeti: "YAYIN ÖZETİ (eski adı recap): sadece hediyeler, kamera efekti yok, sessiz, hassas crop, değer→hız (AmoRecap); 5 altın kural docs/09 §0"
 
 # ─────────────────────────────────────────────
 # ONAYLANMIŞ KURALLAR (müşteri geri bildirimiyle kesinleşti)
@@ -51,12 +56,23 @@ code_standards:
     - "RECAP: değer → hız (pahalı 1.3x, spam 2.6x), sıra kronolojik, final en dramatik hediyeye kilitlenir"
     - "RECAP crop: liderlik tablosu + yayıncı adı kadrajda kalır; üstten yalnız durum çubuğu atılır"
     - "Level videosu sınıfı baştan sorulur: NORMAL (tek AI sahne + bant zoom) mı ÖZEL/BÜYÜK (güçlü AI sahneler + elmas patlatma) mı"
+    - "GENEL İLKE (tüm tipler): hediye/canlı ekranı = MİNİMUM animasyon — blur, chromatic, glow, grain, halka, kıvılcım YOK; canlı renk (saturate ~1.35); zoom ≤ 9:20→9:16 pillarbox kırpması (1.25) + 0.1; kesme = hard cut + kısa flaş; sarsıntı yalnız kükreme anında, hafif"
+    - "Beni Sev intro: seviye ekranı başta ŞART, her videoda FARKLI tarz; kullanılmış tarzları docs/00 tarz kaydından kontrol et, tekrar etme"
+    - "Hediye sesleri: kayıt sesi KAPALI (yayın müziği sızar); gerçek TikTok hediye sesleri ~/tiktok-edit/assets/hediye-sesleri'nden, tek görsel ankere (ağız açılışı/kafa kalkışı) kilitlenir — docs/10"
+    - "Müzik: müşteri link verirse o (TikTok sesi aweme API ile iner — docs/03); drop = patlama, bölüm değişimi = canlıya geçiş, tüm kesmeler beat gridinde; kısa ses bar sınırında döngülenir"
+    - "Yeni işe SADE başla: geri bildirim hep 'çıkar' yönünde gelir; efekt eklemek çıkarmaktan ucuz"
+    - "Her tipografi/gradient için --frames ile kısa test render (still yetmez: background-clip+filter videoda dikdörtgen olur)"
 
   forbidden:
     - "Karalama: UI gizlemek için yarı saydam yama — ya bezel/kırpma gibi doğal çözüm ya hiç"
     - "Sağa-sola pan bitişi (reddedildi)"
     - "İkinci/farklı görünümlü sayaç kutusu (reddedildi)"
     - "Vitrin girişine SFX eklemek — yalnız orijinal ses (Beni Sev'in müzikli devamı hariç)"
+    - "Whoosh ('fiyuv') ve shimmer ('tıss') SFX — hiçbir tipte; kesme/vuruşta yalnız düşük boom"
+    - "Çember halkası (ShockRings) ve yatay ışın süpürmesi (FlareSweep) — AI sahnede de YOK"
+    - "Aynı Beni Sev intro tarzını iki videoda tekrar kullanmak"
+    - "Hediye ekranına glow bloom / blur / chromatic / agresif zoom-dalış (Saray'ın hediye perdesi dili artık kullanılmaz)"
+    - "Jenerik stok SFX/müzik — ama müşterinin verdiği müzik ve gerçek TikTok hediye sesleri SERBEST (kaynakta ses olmasa da)"
     - "RECAP'te kamera efekti: shake, zoom, whip, punch-in, RGB ayrışması, titreme"
     - "RECAP'te jenerik ses: Universe alım sesi, money gun, boom/whoosh/shimmer — kaynakta yoksa SESSİZ"
     - "Agresif üst crop (ör. 330px) — liderlik tablosunu götürür"
@@ -76,7 +92,17 @@ lessons:
     - "concat AAC ses kayması: segment bazlı ses, tek geçişte birleştir"
     - "add-audio süresi kaynaktan uzun olamaz"
     - "yt-dlp çıktısı AV1/Opus olabilir → H.264/AAC'ye çevir"
+  remotion_v2:
+    - "background-clip:text + CSS filter → videoda metin düz dikdörtgen (still'de görünmez): gölge ayrı textShadow katmanı, filtre yok, kısa --frames test"
+    - "Slow-mo: ffmpeg minterpolate (mci/aobmc/bidir/vsbmc) 24fps AI'da 0.4x'e kadar artefaktsız"
+    - "Kısmi render --frames=a-b tüm sabitleri korur; intro atmak için yeterli"
+  audio_v2:
+    - "mp3 decode tepesi +5 dBFS olabilir → müzik -6/-8 dB wav, render sonrası alimiter; tepe ölçümü stereo/48k (mono downmix abartır)"
+    - "Kısa TikTok sesi (25s): bar sınırında döngüle, sıçrama anını kükreme/uluma duck penceresine koy"
+    - "tiktok:sound extractor kırık; aweme API music/aweme ucu play_url veriyor (docs/03, skill tiktok-indir)"
   workflow:
+    - "Notları kaynağından doğrula: 'o iki ses' = yavru da kükrüyor (10fps şerit); tahmin etme"
+    - "7 sürümün 5'i efekt/ses ÇIKARMA oldu — ilk sürümü minimum efektle çıkar"
     - "QuickTime stale dosya: aynı isme render etme, yeni isimli kopya aç"
     - "Paralel oturum: hafıza dosyası değiştiyse önce dosya sistemini oku, var olan işi ezme"
     - "Yanlış pozitif renk metriği: turuncu yele 'kırmızı banner' sanıldı — metrik + görsel şerit birlikte"
@@ -103,7 +129,7 @@ agent_roles:
     responsibilities:
       - "Kaynak analizi: proxy + mono ses çıkar, sinyal tespiti (detect.py / gift_scan)"
       - "Kontakt föyü üret, adayları GÖZLE sınıflandır, segment tablosunu yaz"
-      - "İş tipini (vitrin / level / recap) ve level sınıfını (NORMAL / BÜYÜK) netleştir"
+      - "İş tipini iş kartından al (5 tip: beni_sev / muhafiz / level_normal / level_ozel / yayin_ozeti — docs/00-tipler.md); belirtilmemişse §0 karar tablosuyla SOR"
   editor:
     count: 1
     model_tier: 1
@@ -119,14 +145,14 @@ agent_roles:
     responsibilities:
       - "Müzik kilidi matematiği (sona kilitle / süreyi eşitle), ducking, kükreme pencereleri"
       - "-90 dB kontrolü, AAC kayması, codec uyumu"
-      - "SFX YOK kuralını korur — kaynakta yoksa sessiz teslim"
+      - "Hediye sesleri kütüphaneden (docs/10), whoosh/shimmer yok; müşteri müziği varsa drop/bölüm kilitleri"
   qa:
     count: 1
     model_tier: 2
     color: "red"
     responsibilities:
       - "Kare + dB doğrulama, panel_scan taraması, sınır kareleri"
-      - "Müşteri kurallarına karşı kontrol listesi (5 altın kural / 9 onaylı kural)"
+      - "Müşteri kurallarına karşı kontrol listesi (docs/05 #1-16 + genel ilke: hediye ekranı minimum animasyon)"
       - "Geri bildirimi kural dokümanına işle"
 
 # ─────────────────────────────────────────────
@@ -134,8 +160,10 @@ agent_roles:
 # ─────────────────────────────────────────────
 initial_feed:
   - "Sen TikTok canlı yayın kliplerinden müşteri videosu üreten bir kurgu ekibisin. Araçlar: ffmpeg, Remotion, python (detect.py, beats.py, panel_scan.py)."
-  - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ilgili iş tipinin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti) oku."
-  - "Önce SOR: kaçıncı seviye, özel mi? 40+ → BENİ SEV (muhafız teması); değilse NORMAL LEVEL (lüks sade, elmas yok) ya da ÖZEL LEVEL (detaylı AI + elmas patlatma); arşiv → RECAP. Her tipin efekt dili farklıdır, karıştırma."
+  - "Bilgi tabanı ~/tiktok-edit/docs altındadır; işe başlamadan ÖNCE docs/05-kurallar-ve-dersler.md (müşteri kuralları #10-16 + genel ilke) ve ilgili tipin dokümanını (06-sablonlar, 08-level-atlama, 09-yayin-ozeti, 10-hediye-sesleri) oku. ~/tiktok-edit/CLAUDE.md haritadır."
+  - "İlk 5 soru: (1) kaçıncı seviye/özel mi, (2) müzik linki, (3) hangi hediyeler, (4) intro tarzı (Beni Sev'de daha önce kullanılmamış), (5) yasaklar. Müzik netleşmeden render yok."
+  - "Oturum sonunda /ders-kaydet: yeni kural/ders/ses dosyasını docs'a işle ve commit et — hafıza haritası docs'tan beslenir, ajan yazmazsa öğrenilen kaybolur."
+  - "Tip docs/00-tipler.md'den: iş kartında yazıyorsa onu uygula. Yazmıyorsa SOR: arşiv → YAYIN ÖZETİ; 40+ → BENİ SEV (varsayılan; 'muhafız' dendiyse MUHAFIZ = introsuz Beni Sev); <40 → elmas patlatma + çoklu AI sahne varsa ÖZEL LEVEL, yoksa BASİT LEVEL. Her tipin efekt dili farklıdır, karıştırma."
   - "Müşteri başına not tut: tercihleri, yasakları, onaylı çıktıları. Yeni iş o notla başlar."
   - "Hiçbir render 'çalıştı' diye teslim edilmez — kare çıkar, dB ölç, sonra sun."
-  - "Kaynakta olmayan sesi dışarıdan ekleme. Sessiz teslim kabul edilebilir, yanlış ses kabul edilmez."
+  - "Kayıt sesi asla kullanılmaz; hediye sesleri assets/hediye-sesleri kütüphanesinden (gerçek TikTok sesleri), müzik müşteriden. Jenerik stok SFX yok; whoosh/shimmer/çember/ışın yok."
