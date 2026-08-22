@@ -12,14 +12,14 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare, History, FolderOpen, AlertTriangle } from 'lucide-react';
+import { Copy, SplitSquareHorizontal, SplitSquareVertical, Maximize2, Minimize2, X, Plus, TerminalSquare, History, FolderOpen, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Mosaic, MosaicWindow, createRemoveUpdate, updateTree } from 'react-mosaic-component';
 import type { MosaicNode, MosaicPath, MosaicDirection } from 'react-mosaic-component';
-import { useTerminalStore, engineCommand } from '../../store/terminalStore';
+import { useTerminalStore, engineCommand, SHELL_ENGINE } from '../../store/terminalStore';
 import type { TerminalSession } from '../../store/terminalStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useProjectStore } from '../../store/projectStore';
-import { getOrCreateTerminal, attachTerminal, disposeTerminal } from './terminalRegistry';
+import { getOrCreateTerminal, attachTerminal, disposeTerminal, onContainerResize } from './terminalRegistry';
 import { SessionsMenu } from './SessionsMenu';
 import { setProjectRootPath } from '../../services/projectController';
 import { pickDirectory } from '../../services/platform';
@@ -29,8 +29,16 @@ import '@xterm/xterm/css/xterm.css';
 import 'react-mosaic-component/react-mosaic-component.css';
 import './MultiTerminalPanel.css';
 
-/** Selectable CLI engines (matches src-tauri cli_engine detection). */
-const ENGINES = ['claude', 'codex', 'gemini'];
+/** Selectable CLI engines (matches src-tauri cli_engine detection) + bare shell. */
+const ENGINES = ['claude', 'codex', 'gemini', SHELL_ENGINE];
+
+/** What the pane's chip shows: the CLI it launches, or "shell" when it launches nothing. */
+function paneEngine(session: TerminalSession, activeEngine: string): string {
+  return session.command ? (session.engine ?? activeEngine) : SHELL_ENGINE;
+}
+
+/** A beat for the pty_kill IPC before the same session id respawns. */
+const RESPAWN_DELAY_MS = 90;
 
 /** Attaches the session's persistent terminal into this pane. */
 function TerminalPane({ session }: { session: TerminalSession }) {
@@ -42,7 +50,12 @@ function TerminalPane({ session }: { session: TerminalSession }) {
     if (!el) return;
     const entry = getOrCreateTerminal(session, activeEngine);
     attachTerminal(entry, el);
-    const ro = new ResizeObserver(() => entry.fit.fit());
+    // Hidden (0×0) and rapid-fire resizes are filtered in the registry so the
+    // PTY only ever learns real, settled sizes.
+    const ro = new ResizeObserver((records) => {
+      const rect = records[records.length - 1]?.contentRect;
+      if (rect) onContainerResize(entry, rect);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [session, activeEngine]);
@@ -69,12 +82,19 @@ export function MultiTerminalPanel() {
 
   /** Restarts a session's terminal on a different CLI engine. */
   const switchEngine = (session: TerminalSession, engine: string) => {
-    if ((session.engine ?? activeEngine) === engine) return;
+    if (paneEngine(session, activeEngine) === engine) return;
     disposeTerminal(session.id);
-    // Give the pty_kill IPC a beat before the same session id respawns.
     window.setTimeout(() => {
       useTerminalStore.getState().setSessionEngine(session.id, engine);
-    }, 90);
+    }, RESPAWN_DELAY_MS);
+  };
+
+  /** Boots a fresh terminal (same engine, same Claude conversation) after the process ended. */
+  const restartPane = (session: TerminalSession) => {
+    disposeTerminal(session.id);
+    window.setTimeout(() => {
+      useTerminalStore.getState().restartSession(session.id);
+    }, RESPAWN_DELAY_MS);
   };
 
   const splitPane = (id: string, path: MosaicPath, direction: MosaicDirection) => {
@@ -183,12 +203,16 @@ export function MultiTerminalPanel() {
     const isZoomed = zoomedId === session.id;
     return (
       <div className="term-toolbar">
-        <span className="term-status-dot" style={{ background: session.statusColor }} />
+        <span
+          className="term-status-dot"
+          title={session.exited ? 'Süreç sonlandı' : 'Çalışıyor'}
+          style={{ background: session.exited ? '#ef4444' : session.statusColor }}
+        />
         <span className="term-toolbar-title">{session.title}</span>
         <select
           className="term-chip term-chip-select"
-          title="Bu oturumun CLI motoru — değiştirince oturum yeniden başlar"
-          value={session.engine ?? activeEngine}
+          title="Bu panelin CLI motoru (shell = sadece kabuk) — değiştirince oturum yeniden başlar"
+          value={paneEngine(session, activeEngine)}
           onMouseDown={e => e.stopPropagation()}
           onChange={e => switchEngine(session, e.target.value)}
         >
@@ -197,6 +221,11 @@ export function MultiTerminalPanel() {
           ))}
         </select>
         <div className="term-toolbar-actions">
+          {session.exited && (
+            <button className="term-action term-action-restart" title="Yeniden başlat" onClick={() => restartPane(session)}>
+              <RotateCcw size={13} />
+            </button>
+          )}
           <button className="term-action" title="Seçimi kopyala" onClick={() => copySelection(session)}>
             <Copy size={13} />
           </button>

@@ -29,7 +29,12 @@ export interface TerminalSession {
    * claude) `--resume` it, so the conversation outlives the process.
    */
   claudeSessionId?: string;
+  /** The pane's shell/CLI process ended (PTY EOF); the pane offers a restart. */
+  exited?: boolean;
 }
+
+/** Chip value for a pane that runs no CLI — a bare shell. */
+export const SHELL_ENGINE = 'shell';
 
 interface TerminalState {
   sessions: Record<string, TerminalSession>;
@@ -42,8 +47,15 @@ interface TerminalState {
   /** Creates a session record and returns its id (layout is caller's job). */
   createSession: (partial?: Partial<TerminalSession>) => string;
   removeSession: (id: string) => void;
-  /** Switches a session's CLI engine (caller restarts its terminal). */
+  /**
+   * Switches a session's CLI engine (caller restarts its terminal).
+   * `SHELL_ENGINE` turns the pane into a bare shell that launches nothing.
+   */
   setSessionEngine: (id: string, engine: string) => void;
+  /** Records that the pane's process ended (or is running again). */
+  setSessionExited: (id: string, exited: boolean) => void;
+  /** Replaces the session object so its pane boots a fresh terminal. */
+  restartSession: (id: string) => void;
   /** Remembers the Claude conversation a pane is running. */
   setClaudeSessionId: (id: string, claudeSessionId: string) => void;
   /**
@@ -153,12 +165,26 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     set((state) => {
       const session = state.sessions[id];
       if (!session) return state;
-      return {
-        sessions: {
-          ...state.sessions,
-          [id]: { ...session, engine, command: engine },
-        },
-      };
+      const { command: _dropped, ...rest } = session;
+      const next: TerminalSession = engine === SHELL_ENGINE
+        ? { ...rest, exited: false }
+        : { ...rest, engine, command: engine, exited: false };
+      return { sessions: { ...state.sessions, [id]: next } };
+    }),
+
+  setSessionExited: (id, exited) =>
+    set((state) => {
+      const session = state.sessions[id];
+      if (!session || !!session.exited === exited) return state;
+      return { sessions: { ...state.sessions, [id]: { ...session, exited } } };
+    }),
+
+  restartSession: (id) =>
+    set((state) => {
+      const session = state.sessions[id];
+      if (!session) return state;
+      // Always a new object: panes re-mount their terminal on identity change.
+      return { sessions: { ...state.sessions, [id]: { ...session, exited: false } } };
     }),
 
   setClaudeSessionId: (id, claudeSessionId) =>

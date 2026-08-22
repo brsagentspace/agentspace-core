@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+/* JetBrains Mono ships with the app (@fontsource, see main.tsx); Inter is UI-only and may stay remote. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 :root {
   /* Colors - Muratify Bento Box Theme */
